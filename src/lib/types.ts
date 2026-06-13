@@ -61,3 +61,39 @@ export type SignalRule = {
   paramsJson?: Record<string, unknown>;
   indicatorTemplate?: IndicatorTemplate | null;
 };
+
+export type TelegramNotificationSetting = {
+  id?: string;
+  chatId?: string | null;
+  enabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type ScannerRuleResult = {
+  ruleId: string;
+  ruleName: string;
+  workspaceId: string;
+  symbol: string;
+  timeframe: string;
+  status: "TRIGGERED" | "NO_SIGNAL" | "DUPLICATE" | "SKIPPED" | "ERROR";
+  signalType?: string;
+  zone?: string;
+  message: string;
+  telegramSent?: boolean;
+};
+
+export type TelegramNotificationResponse = {
+  setting: TelegramNotificationSetting;
+  botConfigured: boolean;
+  defaultChatIdConfigured: boolean;
+};
+
+export type ScannerSummary = {
+  scannedRules: number;
+  triggered: number;
+  telegramSent: number;
+  skipped: number;
+  errors: number;
+  results: ScannerRuleResult[];
+};
