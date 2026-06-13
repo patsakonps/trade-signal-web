@@ -1,0 +1,11 @@
+.git
+.gitignore
+node_modules
+dist
+.vite
+.DS_Store
+__MACOSX
+.env
+.env.*
+*.log
+coverage
