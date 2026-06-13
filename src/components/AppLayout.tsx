@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { BarChart3, BellRing, BriefcaseBusiness, Code2, Eye, FileDown, Gauge, Menu, RefreshCw } from "lucide-react";
+import { BellRing, BriefcaseBusiness, Code2, Eye, FileDown, Gauge, LogOut, Menu, RefreshCw } from "lucide-react";
 import { useState } from "react";
-import { getWorkspaceId, resetWorkspace } from "../lib/workspace";
+import { clearWorkspaceId } from "../lib/workspace";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: Gauge },
@@ -21,17 +21,21 @@ const pageInfo: Record<string, { title: string; desc: string }> = {
   "/import": { title: "Import", desc: "เตรียมพื้นที่รับไฟล์ history trade จาก Binance TH" }
 };
 
-export function AppLayout() {
+type AppLayoutProps = {
+  workspaceId: string;
+  onWorkspaceChanged: (workspaceId: string | null) => void;
+};
+
+export function AppLayout({ workspaceId, onWorkspaceChanged }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const info = pageInfo[location.pathname] ?? pageInfo["/dashboard"];
-  const workspaceId = getWorkspaceId();
 
-  function handleResetWorkspace() {
-    const ok = window.confirm("Reset workspace จะทำให้ web ใช้ workspaceId ใหม่ ข้อมูลเดิมจะไม่ถูกลบจาก DB แต่ browser นี้จะไม่ชี้ไป workspace เดิมแล้ว ต้องการทำต่อไหม?");
+  function handleSwitchWorkspace() {
+    const ok = window.confirm("ออกจาก workspace นี้ไหม? ข้อมูลใน DB ไม่ถูกลบ แค่ browser นี้จะกลับไปหน้าใส่ workspace ใหม่");
     if (!ok) return;
-    resetWorkspace();
-    window.location.reload();
+    clearWorkspaceId();
+    onWorkspaceChanged(null);
   }
 
   return (
@@ -60,7 +64,7 @@ export function AppLayout() {
         <div className="sidebar-card">
           <div className="small-label">Workspace</div>
           <div className="workspace-id">{workspaceId.slice(0, 8)}...{workspaceId.slice(-6)}</div>
-          <button className="btn small full" onClick={handleResetWorkspace}>Reset workspace</button>
+          <button className="btn small full" onClick={handleSwitchWorkspace}><LogOut size={14} /> Switch workspace</button>
         </div>
       </aside>
 

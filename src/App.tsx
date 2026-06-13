@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -6,11 +7,19 @@ import { SignalRulesPage } from "./pages/SignalRulesPage";
 import { IndicatorsPage } from "./pages/IndicatorsPage";
 import { PortfolioPage } from "./pages/PortfolioPage";
 import { ImportPage } from "./pages/ImportPage";
+import { WorkspaceLoginPage } from "./pages/WorkspaceLoginPage";
+import { getStoredWorkspaceId } from "./lib/workspace";
 
 export default function App() {
+  const [workspaceId, setWorkspaceIdState] = useState<string | null>(() => getStoredWorkspaceId());
+
+  if (!workspaceId) {
+    return <WorkspaceLoginPage onLogin={setWorkspaceIdState} />;
+  }
+
   return (
     <Routes>
-      <Route element={<AppLayout />}>
+      <Route element={<AppLayout workspaceId={workspaceId} onWorkspaceChanged={setWorkspaceIdState} />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/watchlist" element={<WatchlistPage />} />
         <Route path="/rules" element={<SignalRulesPage />} />
