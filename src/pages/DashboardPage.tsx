@@ -105,12 +105,24 @@ export function DashboardPage() {
           </div>
           {error ? <div className="alert error">{error}</div> : null}
           <MiniChart result={result} />
-          <div className="badge-row chart-meta-row">
-            <Badge tone={toneFromZone(latestZone)}>ZONE: {latestZone}</Badge>
-            <Badge tone={toneFromZone(latestSignal)}>SIGNAL: {latestSignal}</Badge>
-            <Badge tone="blue">EMA12/EMA26</Badge>
-            {latestCloseTime ? <Badge tone={stale ? "yellow" : "neutral"}>CLOSE: {formatThaiTime(latestCloseTime)}</Badge> : null}
-            <a className="btn small" href={getTradingViewChartUrl(symbol)} target="_blank" rel="noreferrer"><ExternalLink size={14} /> TradingView</a>
+          <div className="chart-summary-grid">
+            <div className="chart-summary-item">
+              <span>Zone</span>
+              <Badge tone={toneFromZone(latestZone)}>{latestZone}</Badge>
+            </div>
+            <div className="chart-summary-item">
+              <span>Signal</span>
+              <Badge tone={toneFromZone(latestSignal)}>{latestSignal}</Badge>
+            </div>
+            <div className="chart-summary-item">
+              <span>EMA</span>
+              <b>12 / 26</b>
+            </div>
+            <div className="chart-summary-item">
+              <span>Close</span>
+              <b>{latestCloseTime ? formatThaiTime(latestCloseTime) : "-"}</b>
+            </div>
+            <a className="btn small chart-link-btn" href={getTradingViewChartUrl(symbol)} target="_blank" rel="noreferrer"><ExternalLink size={14} /> TradingView</a>
           </div>
         </div>
 

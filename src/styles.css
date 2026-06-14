@@ -327,6 +327,46 @@ tr:hover td { background: rgba(255,255,255,.035); }
   .history-chart-btn { align-self: stretch; }
 }
 
+/* Mobile audit cleanup: shared card/action layout */
+html, body, #root { max-width: 100%; overflow-x: hidden; }
+.card, .panel, .signal-card, .mobile-data-card { min-width: 0; }
+.btn, .badge { max-width: 100%; }
+.btn { min-height: 40px; white-space: nowrap; }
+.badge { align-items: center; justify-content: center; line-height: 1.15; }
+.signal-card b, .mobile-data-card h3, .panel h3 { overflow-wrap: anywhere; }
+.signal-card span, .muted, .mobile-data-card p { word-break: normal; overflow-wrap: anywhere; }
+
+.chart-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 10px;
+  margin-top: 14px;
+  align-items: stretch;
+}
+.chart-summary-item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 11px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.075);
+}
+.chart-summary-item > span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+.chart-summary-item > b {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+}
+.chart-summary-item .badge { align-self: flex-start; }
+.chart-link-btn { align-self: stretch; }
+
 .rule-card { align-items: flex-start; }
 .rule-card-content { min-width: 0; }
 .rule-title-row { align-items: flex-start; gap: 10px; }
@@ -339,11 +379,65 @@ tr:hover td { background: rgba(255,255,255,.035); }
 .rule-meta-grid b { display: block; color: var(--text); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; word-break: normal; }
 
 @media (max-width: 720px) {
-  .rule-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; }
+  .main-content { padding: 16px 14px; padding-bottom: 108px; }
+  .page-stack { gap: 14px; }
+  .panel { padding: 16px; border-radius: 22px; }
+  .panel-head { align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+  .panel-head > .btn { width: 100%; }
+  .responsive-head { align-items: stretch; }
+  .responsive-head > .btn, .responsive-head > .badge { width: 100%; }
+
+  .btn { min-height: 42px; }
+  .btn.small { min-height: 40px; padding: 9px 11px; }
+  .icon-btn { width: 42px; height: 42px; flex: 0 0 auto; }
+
+  .chart-card-inner, .chart-empty { height: 230px; border-radius: 18px; }
+  .chart-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .chart-summary-item { padding: 10px; }
+  .chart-summary-item .badge { width: 100%; justify-content: center; }
+  .chart-link-btn { grid-column: 1 / -1; width: 100%; }
+
+  .signal-list { gap: 12px; }
+  .signal-card { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 11px; padding: 14px; align-items: flex-start; border-radius: 18px; }
+  .signal-dot { margin-top: 4px; width: 11px; height: 11px; }
+  .signal-title-row { flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .signal-title-row b { min-width: 0; margin-bottom: 0; line-height: 1.35; }
+  .signal-title-row .badge { flex: 0 0 auto; }
+  .signal-content > span { margin-top: 8px; line-height: 1.6; }
+
+  .history-signal-card { display: flex; flex-direction: column; gap: 12px; }
+  .history-signal-main { width: 100%; }
+  .history-title-row { flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .history-meta-grid { grid-template-columns: 1fr; gap: 8px; }
+  .history-meta-grid div { padding: 9px 10px; }
+  .history-chart-btn { align-self: stretch; width: 100%; }
+
+  .rule-card { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 11px; align-items: start; }
   .rule-card-content { width: 100%; }
   .rule-title-row { flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 10px; }
   .rule-meta-grid { grid-template-columns: 1fr; gap: 8px; }
-  .rule-card-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; width: 100%; gap: 8px; }
+  .rule-card-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 42px; width: 100%; gap: 8px; }
   .rule-card .rule-card-actions .btn.small { grid-column: auto; width: 100%; }
-  .rule-card .rule-card-actions .icon-btn { width: 44px; height: 42px; }
+  .rule-card .rule-card-actions .icon-btn { width: 42px; height: 42px; }
+
+  .mobile-data-card { display: grid; grid-template-columns: 1fr; align-items: stretch; gap: 12px; padding: 15px; }
+  .mobile-card-meta { align-items: stretch; width: 100%; }
+  .mobile-card-meta > .badge { width: 100%; }
+  .table-actions.mobile-actions { display: grid; grid-template-columns: 1fr 1fr 42px; width: 100%; gap: 8px; }
+  .table-actions.mobile-actions .btn.small { width: 100%; }
+
+  .summary-metrics { grid-template-columns: 1fr; }
+  .mobile-bottom-nav { padding-left: 6px; padding-right: 6px; }
+  .mobile-bottom-nav a { font-size: 10px; min-width: 0; }
+}
+
+@media (max-width: 390px) {
+  .main-content { padding-left: 12px; padding-right: 12px; }
+  .panel { padding: 14px; }
+  .chart-card-inner, .chart-empty { height: 215px; }
+  .chart-summary-grid { grid-template-columns: 1fr; }
+  .signal-title-row, .history-title-row, .rule-title-row { flex-direction: column; align-items: flex-start; }
+  .signal-title-row .badge, .history-title-row .badge, .rule-title-row .badge { width: auto; }
+  .table-actions.mobile-actions { grid-template-columns: 1fr; }
+  .table-actions.mobile-actions .icon-btn { width: 100%; }
 }
