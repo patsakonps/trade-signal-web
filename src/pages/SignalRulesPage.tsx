@@ -3,6 +3,7 @@ import { BellRing, Play, Plus, Send, Trash2 } from "lucide-react";
 import { api, getErrorMessage } from "../lib/api";
 import type { IndicatorTemplate, ScannerRuleResult, ScannerSummary, SignalRule, TelegramNotificationResponse, TelegramNotificationSetting } from "../lib/types";
 import { Badge } from "../components/Badge";
+import { formatThaiDateTime } from "../lib/time";
 
 function getScanStatusTone(status: ScannerRuleResult["status"]): "green" | "red" | "yellow" | "blue" | "neutral" {
   if (status === "TRIGGERED") return "green";
@@ -10,11 +11,6 @@ function getScanStatusTone(status: ScannerRuleResult["status"]): "green" | "red"
   if (status === "SKIPPED") return "yellow";
   if (status === "DUPLICATE") return "blue";
   return "neutral";
-}
-
-function formatScanTime(value?: string) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
 }
 
 function TelegramNotificationPanel() {
@@ -154,7 +150,7 @@ function TelegramNotificationPanel() {
             <span>Skipped: <b>{scanSummary.skipped}</b></span>
             <span>Errors: <b>{scanSummary.errors}</b></span>
           </div>
-          <p className="muted">Scanned at {formatScanTime(scanSummary.scannedAt)} · {scanSummary.durationMs} ms</p>
+          <p className="muted">Scanned at {formatThaiDateTime(scanSummary.scannedAt)} · {scanSummary.durationMs} ms</p>
           <div className="signal-list">
             {scanSummary.results.map((item) => {
               const tone = getScanStatusTone(item.status);
@@ -163,7 +159,7 @@ function TelegramNotificationPanel() {
                   <div className={`signal-dot ${tone === "neutral" ? "neutral" : tone}`} />
                   <div className="signal-content">
                     <div className="signal-title-row"><b>{item.ruleName}</b><Badge tone={tone}>{item.status}</Badge></div>
-                    <span>{item.symbol} · {item.timeframe} · {item.signalType ?? "-"} · zone {item.zone ?? "-"} · {item.candleCloseTime ? formatScanTime(item.candleCloseTime) : "-"}</span>
+                    <span>{item.symbol} · {item.timeframe} · {item.signalType ?? "-"} · zone {item.zone ?? "-"} · {item.candleCloseTime ? `แท่งปิด ${formatThaiDateTime(item.candleCloseTime)} เวลาไทย` : "-"}</span>
                     <span>{item.message}</span>
                   </div>
                 </div>

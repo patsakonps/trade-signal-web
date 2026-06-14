@@ -288,3 +288,22 @@ tr:hover td { background: rgba(255,255,255,.035); }
   .login-actions { display: grid; grid-template-columns: 1fr; }
   .login-actions .btn { width: 100%; }
 }
+
+.alert.warning { background: rgba(255,209,102,.11); border: 1px solid rgba(255,209,102,.24); color: #ffefbe; }
+.chart-meta-row { align-items: center; flex-wrap: wrap; }
+.signal-marker { stroke: rgba(8,11,18,.9); stroke-width: 2; filter: drop-shadow(0 0 7px rgba(255,255,255,.18)); }
+.signal-marker.buy { fill: var(--green); }
+.signal-marker.sell { fill: var(--red); }
+.table-time-cell { display: grid; gap: 4px; color: var(--muted); font-size: 12px; }
+.table-time-cell b { color: var(--text); font-size: 13px; }
+.table-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.wide-table-card { overflow-x: auto; }
+.wide-table-card table { min-width: 980px; }
+.watchlist-mobile-card { align-items: flex-start; }
+.mobile-actions { justify-content: flex-end; }
+.signal-card .btn.small { flex: 0 0 auto; }
+
+@media (max-width: 720px) {
+  .table-actions.mobile-actions { justify-content: flex-end; }
+  .signal-card .btn.small { width: 100%; }
+}

@@ -81,6 +81,30 @@ export function MiniChart({ result }: MiniChartProps) {
         })}
         {fastPoints.length ? <path d={pathFrom(fastPoints)} className="line-fast" /> : null}
         {slowPoints.length ? <path d={pathFrom(slowPoints)} className="line-slow" /> : null}
+        {series.map((point, index) => {
+          const price = toFiniteNumber(point.price);
+          if (price === null || (point.signal !== "BUY" && point.signal !== "SELL")) return null;
+
+          const x = xFor(index);
+          const y = yFor(price);
+          if (point.signal === "BUY") {
+            return (
+              <polygon
+                key={`marker-${point.time}-${index}`}
+                className="signal-marker buy"
+                points={`${x.toFixed(2)},${(y - 30).toFixed(2)} ${(x - 7).toFixed(2)},${(y - 17).toFixed(2)} ${(x + 7).toFixed(2)},${(y - 17).toFixed(2)}`}
+              />
+            );
+          }
+
+          return (
+            <polygon
+              key={`marker-${point.time}-${index}`}
+              className="signal-marker sell"
+              points={`${x.toFixed(2)},${(y + 30).toFixed(2)} ${(x - 7).toFixed(2)},${(y + 17).toFixed(2)} ${(x + 7).toFixed(2)},${(y + 17).toFixed(2)}`}
+            />
+          );
+        })}
       </svg>
     </div>
   );

@@ -10,6 +10,7 @@ export type Candle = {
 
 export type IndicatorSeriesPoint = {
   time: number;
+  closeTime?: number;
   price: number;
   zone?: string;
   signal?: string;
@@ -100,4 +101,23 @@ export type ScannerSummary = {
   skipped: number;
   errors: number;
   results: ScannerRuleResult[];
+};
+
+export type SignalHistoryItem = {
+  id: string;
+  exchange: string;
+  symbol: string;
+  timeframe: string;
+  indicatorKey: string;
+  signalType: string;
+  zone?: string | null;
+  price: number;
+  candleCloseTime: string;
+  createdAt: string;
+  rule: {
+    id: string;
+    name: string;
+    condition: string;
+    enabled: boolean;
+  } | null;
 };
