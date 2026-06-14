@@ -3,7 +3,7 @@ import { BellPlus, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { api, getErrorMessage } from "../lib/api";
 import type { IndicatorResult, SignalRule, WatchlistItem } from "../lib/types";
 import { Badge, toneFromZone } from "../components/Badge";
-import { formatThaiDateTime, formatThaiTime, formatTimeAgoThai, isDataStale } from "../lib/time";
+import { formatThaiTime, formatTimeAgoThai, isDataStale } from "../lib/time";
 import { getTradingViewChartUrl } from "../lib/marketLinks";
 
 function formatPrice(value?: number) {
@@ -122,8 +122,11 @@ export function WatchlistPage() {
   return (
     <div className="page-stack">
       <div className="card panel">
-        <div className="panel-head">
-          <h3>Add Watchlist</h3>
+        <div className="panel-head responsive-head">
+          <div>
+            <h3>Add Watchlist</h3>
+            <p className="muted">เพิ่มเหรียญที่อยากติดตาม CDC zone</p>
+          </div>
           <Badge tone="blue">Binance</Badge>
         </div>
         <div className="inline-form">
@@ -143,14 +146,17 @@ export function WatchlistPage() {
 
       <div className="card panel desktop-table-card wide-table-card">
         <div className="panel-head">
-          <h3>Watchlist</h3>
+          <div>
+            <h3>Watchlist</h3>
+            <p className="muted">ดูสถานะล่าสุดและสร้าง rule ได้ทันที</p>
+          </div>
           <button className="btn" onClick={loadItems}>Refresh</button>
         </div>
         <table>
           <thead>
             <tr>
               <th>Symbol</th>
-              <th>Timeframe</th>
+              <th>TF</th>
               <th>Zone</th>
               <th>Signal</th>
               <th>Price</th>
@@ -205,17 +211,22 @@ export function WatchlistPage() {
           return (
             <div className="card mobile-data-card watchlist-mobile-card" key={item.id}>
               <div>
-                <h3>{item.symbol}</h3>
-                <p>{item.exchange} · {item.timeframe}</p>
-                <p>{closeTime ? `แท่งปิด ${formatThaiDateTime(closeTime)} เวลาไทย` : "กำลังโหลดเวลาแท่งล่าสุด"}</p>
+                <div className="signal-title-row">
+                  <h3>{item.symbol}</h3>
+                  <Badge tone={toneFromZone(result?.latest.zone)}>{result?.latest.zone ?? "Loading"}</Badge>
+                </div>
+                <p>{item.exchange} · {item.timeframe} · {formatPrice(result?.latest.price)}</p>
+                <div className="history-meta-grid">
+                  <div><span>Signal</span><b>{result?.latest.signal ?? "..."}</b></div>
+                  <div><span>Close</span><b>{closeTime ? formatThaiTime(closeTime) : "..."}</b></div>
+                  <div><span>Fresh</span><b>{closeTime ? formatTimeAgoThai(closeTime) : "..."}</b></div>
+                </div>
               </div>
               <div className="mobile-card-meta">
-                <Badge tone={toneFromZone(result?.latest.zone)}>{result?.latest.zone ?? "Loading"}</Badge>
-                <Badge tone={toneFromZone(result?.latest.signal)}>{result?.latest.signal ?? "..."}</Badge>
                 {stale ? <Badge tone="yellow">STALE</Badge> : null}
                 <div className="table-actions mobile-actions">
                   <button className="btn small" onClick={() => createRuleFromItem(item)} disabled={ruleExists || creatingRuleId === item.id}>
-                    <BellPlus size={14} /> {ruleExists ? "Rule exists" : "Rule"}
+                    <BellPlus size={14} /> {ruleExists ? "Exists" : "Rule"}
                   </button>
                   <a className="btn small" href={getTradingViewChartUrl(item.symbol)} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Chart</a>
                   <button className="icon-btn danger" onClick={() => removeItem(item.id)}><Trash2 size={16} /></button>
@@ -224,6 +235,7 @@ export function WatchlistPage() {
             </div>
           );
         })}
+        {!items.length ? <p className="muted">ยังไม่มี watchlist</p> : null}
       </div>
     </div>
   );

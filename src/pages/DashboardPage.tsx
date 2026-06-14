@@ -18,6 +18,12 @@ function getLatestCloseTime(result: IndicatorResult | null): number | undefined 
   return result?.latest.closeTime ?? result?.latest.time;
 }
 
+function shortSignalDescription(triggered: boolean, closeTime?: number, price?: number) {
+  const closeText = closeTime ? formatThaiTime(closeTime) : "-";
+  if (triggered) return `เกิด ${closeText} · ${formatPrice(price)}`;
+  return `ยังไม่เกิด · ปิดแท่ง ${closeText}`;
+}
+
 export function DashboardPage() {
   const [symbol, setSymbol] = useState("BTCUSDT");
   const [timeframe, setTimeframe] = useState("4h");
@@ -74,14 +80,14 @@ export function DashboardPage() {
   return (
     <div className="page-stack">
       <section className="stats-grid">
-        <StatCard label="Latest Price" value={formatPrice(latest?.price)} sub={`${symbol} · ${timeframe}`} tone="blue" />
-        <StatCard label="CDC Zone" value={latestZone} sub={latestCloseTime ? `แท่งปิด ${formatThaiTime(latestCloseTime)}` : "Green / Red / Yellow / Blue"} tone={latestZone === "RED" ? "negative" : latestZone === "YELLOW" ? "warning" : "positive"} />
-        <StatCard label="Signal" value={latestSignal} sub={latestCloseTime ? `เกิดจากแท่งปิด ${formatThaiTime(latestCloseTime)}` : "after candle close"} tone={latestSignal === "SELL" ? "negative" : latestSignal === "BUY" ? "positive" : "blue"} />
-        <StatCard label="Alerts" value={String(triggeredAlerts)} sub={latestCloseTime ? `ล่าสุด ${formatTimeAgoThai(latestCloseTime)}` : "triggered now"} tone="warning" />
+        <StatCard label="Price" value={formatPrice(latest?.price)} sub={`${symbol} · ${timeframe}`} tone="blue" />
+        <StatCard label="Zone" value={latestZone} sub={latestCloseTime ? `ปิด ${formatThaiTime(latestCloseTime)}` : "CDC zone"} tone={latestZone === "RED" ? "negative" : latestZone === "YELLOW" ? "warning" : "positive"} />
+        <StatCard label="Signal" value={latestSignal} sub={latestCloseTime ? `จากแท่ง ${formatThaiTime(latestCloseTime)}` : "after close"} tone={latestSignal === "SELL" ? "negative" : latestSignal === "BUY" ? "positive" : "blue"} />
+        <StatCard label="Alerts" value={String(triggeredAlerts)} sub={latestCloseTime ? formatTimeAgoThai(latestCloseTime) : "waiting"} tone="warning" />
       </section>
 
       {stale ? (
-        <div className="alert warning">ข้อมูลล่าสุดอาจเก่าเกินไป: แท่งล่าสุดปิดเวลา {formatThaiDateTime(latestCloseTime)} เวลาไทย</div>
+        <div className="alert warning">ข้อมูลอาจเก่า: แท่งล่าสุดปิด {formatThaiDateTime(latestCloseTime)} เวลาไทย</div>
       ) : null}
 
       <section className="content-grid">
@@ -89,7 +95,7 @@ export function DashboardPage() {
           <div className="panel-head responsive-head">
             <div>
               <h3>{symbol} · CDC Action Zone</h3>
-              <p className="muted">Default formula: AP EMA(2), Fast EMA(12), Slow EMA(26)</p>
+              <p className="muted">EMA 12/26 · ใช้แท่งที่ปิดแล้วเท่านั้น</p>
             </div>
             <div className="inline-form compact">
               <input value={symbol} onChange={(event) => setSymbol(event.target.value.toUpperCase())} />
@@ -128,25 +134,21 @@ export function DashboardPage() {
 
         <div className="card panel">
           <div className="panel-head">
-            <h3>Latest Signals</h3>
+            <div>
+              <h3>Latest Signals</h3>
+              <p className="muted">สถานะจากแท่งล่าสุด</p>
+            </div>
             <Badge tone="blue">Live API</Badge>
           </div>
           <div className="signal-list">
-            {result?.alerts.map((alert) => {
-              const candleText = latestCloseTime ? formatThaiDateTime(latestCloseTime) : "-";
-              const description = alert.triggered
-                ? `เกิดสัญญาณเวลา ${candleText} เวลาไทย · ราคา ${formatPrice(latest?.price)}`
-                : `ยังไม่เกิดสัญญาณในแท่งล่าสุด · แท่งล่าสุดปิดเวลา ${candleText} เวลาไทย`;
-
-              return (
-                <SignalCard
-                  key={alert.name}
-                  title={`${symbol} · ${alert.name}`}
-                  description={description}
-                  zone={alert.triggered ? latestSignal : latestZone}
-                />
-              );
-            })}
+            {result?.alerts.map((alert) => (
+              <SignalCard
+                key={alert.name}
+                title={`${symbol} · ${alert.name}`}
+                description={shortSignalDescription(alert.triggered, latestCloseTime, latest?.price)}
+                zone={alert.triggered ? latestSignal : latestZone}
+              />
+            ))}
             {!result ? <p className="muted">กด Run เพื่อดึง CDC signal</p> : null}
           </div>
         </div>
@@ -156,7 +158,7 @@ export function DashboardPage() {
         <div className="panel-head responsive-head">
           <div>
             <h3>Recent Triggered Signals</h3>
-            <p className="muted">ประวัติ signal ที่ scanner บันทึกจริงจาก database เรียงตามเวลาปิดแท่งล่าสุด</p>
+            <p className="muted">ประวัติที่ scanner บันทึกจริง เรียงตามเวลาปิดแท่ง</p>
           </div>
           <button className="btn" onClick={loadSignalHistory} disabled={historyLoading}>{historyLoading ? "Loading" : "Refresh History"}</button>
         </div>
@@ -172,24 +174,12 @@ export function DashboardPage() {
                     <Badge tone={toneFromZone(signal.signalType)}>{signal.zone ?? signal.signalType}</Badge>
                   </div>
                   <div className="history-meta-grid">
-                    <div>
-                      <span>Timeframe</span>
-                      <b>{signal.timeframe}</b>
-                    </div>
-                    <div>
-                      <span>Rule</span>
-                      <b>{signal.rule?.name ?? "Rule deleted"}</b>
-                    </div>
-                    <div>
-                      <span>Price</span>
-                      <b>{formatPrice(signal.price)}</b>
-                    </div>
-                    <div>
-                      <span>Candle close</span>
-                      <b>{formatThaiDateTime(signal.candleCloseTime)}</b>
-                    </div>
+                    <div><span>TF</span><b>{signal.timeframe}</b></div>
+                    <div><span>Rule</span><b>{signal.rule?.name ?? "Deleted"}</b></div>
+                    <div><span>Price</span><b>{formatPrice(signal.price)}</b></div>
+                    <div><span>Close</span><b>{formatThaiTime(signal.candleCloseTime)}</b></div>
                   </div>
-                  <span className="history-created-at">บันทึก {formatTimeAgoThai(signal.createdAt)} · เวลาไทย</span>
+                  <span className="history-created-at">บันทึก {formatTimeAgoThai(signal.createdAt)} · {formatThaiDateTime(signal.candleCloseTime)}</span>
                 </div>
               </div>
               <a className="btn small history-chart-btn" href={getTradingViewChartUrl(signal.symbol)} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Chart</a>

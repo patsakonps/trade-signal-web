@@ -13,12 +13,12 @@ const navItems = [
 ];
 
 const pageInfo: Record<string, { title: string; desc: string }> = {
-  "/dashboard": { title: "Dashboard", desc: "ภาพรวมสัญญาณ CDC Action Zone และตลาดที่กำลังติดตาม" },
-  "/watchlist": { title: "Watchlist", desc: "เพิ่มเหรียญและ timeframe ที่ต้องการติดตาม" },
-  "/rules": { title: "Signal Rules", desc: "สร้าง rule จาก built-in หรือ custom indicator" },
-  "/indicators": { title: "Indicators", desc: "CDC default และ custom script editor" },
-  "/portfolio": { title: "Portfolio", desc: "หน้า portfolio mock พร้อมต่อ import จริงใน phase ถัดไป" },
-  "/import": { title: "Import", desc: "เตรียมพื้นที่รับไฟล์ history trade จาก Binance TH" }
+  "/dashboard": { title: "Dashboard", desc: "ภาพรวมสัญญาณและประวัติที่ scanner บันทึก" },
+  "/watchlist": { title: "Watchlist", desc: "ติดตามเหรียญและสร้าง rule ได้เร็วขึ้น" },
+  "/rules": { title: "Signal Rules", desc: "จัดการ Telegram และเงื่อนไขแจ้งเตือน" },
+  "/indicators": { title: "Indicators", desc: "Built-in CDC และ custom script editor" },
+  "/portfolio": { title: "Portfolio", desc: "สรุปพอร์ตสำหรับ phase import" },
+  "/import": { title: "Import", desc: "นำเข้าไฟล์ประวัติการเทรด" }
 };
 
 type AppLayoutProps = {

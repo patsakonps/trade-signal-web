@@ -3,7 +3,7 @@ import { BellRing, Play, Plus, Send, Trash2 } from "lucide-react";
 import { api, getErrorMessage } from "../lib/api";
 import type { IndicatorTemplate, ScannerRuleResult, ScannerSummary, SignalRule, TelegramNotificationResponse, TelegramNotificationSetting } from "../lib/types";
 import { Badge } from "../components/Badge";
-import { formatThaiDateTime } from "../lib/time";
+import { formatThaiDateTime, formatThaiTime } from "../lib/time";
 
 function getScanStatusTone(status: ScannerRuleResult["status"]): "green" | "red" | "yellow" | "blue" | "neutral" {
   if (status === "TRIGGERED") return "green";
@@ -65,8 +65,8 @@ function TelegramNotificationPanel() {
     setError("");
     setMessage("");
     try {
-      await api.post("/api/notifications/telegram/test", { chatId: setting.chatId || undefined });
-      setMessage("Test message sent to Telegram");
+      await api.post("/api/notifications/telegram/test", { chatId: setting.chatId || null });
+      setMessage("ส่ง Telegram test สำเร็จ");
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -78,11 +78,10 @@ function TelegramNotificationPanel() {
     setScanning(true);
     setError("");
     setMessage("");
-    setScanSummary(null);
     try {
       const response = await api.post<ScannerSummary>("/api/scanner/run", {});
       setScanSummary(response.data);
-      setMessage(`Scanner done: ${response.data.triggered} triggered, ${response.data.telegramSent} Telegram sent, ${response.data.errors} errors`);
+      setMessage(`Scanner done: ${response.data.triggered} triggered, ${response.data.telegramSent} sent, ${response.data.errors} errors`);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -95,9 +94,9 @@ function TelegramNotificationPanel() {
       <div className="panel-head responsive-head">
         <div>
           <h3>Telegram Notification</h3>
-          <p className="muted">Level 2 alert: Cloud/API scanner ส่งข้อความเข้า Telegram เมื่อ rule เกิดสัญญาณใหม่</p>
+          <p className="muted">ตั้งค่า chat และกดทดสอบก่อนให้ Cloud Scheduler ยิงจริง</p>
         </div>
-        <Badge tone={botConfigured ? "green" : "yellow"}>{botConfigured ? (defaultChatIdConfigured ? "BOT + ENV CHAT" : "BOT READY") : "TOKEN MISSING"}</Badge>
+        <Badge tone={botConfigured ? "green" : "yellow"}>{botConfigured ? (defaultChatIdConfigured ? "BOT + DEFAULT CHAT" : "BOT READY") : "TOKEN MISSING"}</Badge>
       </div>
 
       {error ? <div className="alert error">{error}</div> : null}
@@ -107,7 +106,7 @@ function TelegramNotificationPanel() {
         <label>
           Telegram Chat ID
           <input
-            placeholder={defaultChatIdConfigured ? "ใช้ TELEGRAM_CHAT_ID จาก API .env ได้ ถ้าไม่กรอก" : "เช่น 123456789 หรือ -100xxxxxxxxxx"}
+            placeholder={defaultChatIdConfigured ? "ว่างได้ ถ้าใช้ TELEGRAM_CHAT_ID จาก API" : "เช่น 123456789 หรือ -100xxxxxxxxxx"}
             value={setting.chatId ?? ""}
             onChange={(event) => setSetting((value) => ({ ...value, chatId: event.target.value }))}
           />
@@ -126,31 +125,31 @@ function TelegramNotificationPanel() {
 
       <div className="button-row spread-on-mobile">
         <button className="btn" onClick={save} disabled={loading}>
-          <BellRing size={16} /> {loading ? "Saving" : "Save Telegram"}
+          <BellRing size={16} /> {loading ? "Saving" : "Save"}
         </button>
         <button className="btn" onClick={sendTest} disabled={testing || (!setting.chatId && !defaultChatIdConfigured)}>
-          <Send size={16} /> {testing ? "Sending" : "Send Test"}
+          <Send size={16} /> {testing ? "Sending" : "Test"}
         </button>
         <button className="btn primary" onClick={runScanner} disabled={scanning}>
-          <Play size={16} /> {scanning ? "Scanning" : "Run Scanner Now"}
+          <Play size={16} /> {scanning ? "Scanning" : "Run Scanner"}
         </button>
       </div>
 
       <div className="helper-box">
-        <b>วิธีใช้</b>
-        <p>สร้าง bot ด้วย @BotFather แล้วใส่ token ใน API .env: <code>TELEGRAM_BOT_TOKEN=...</code> จากนั้นใส่ <code>chatId</code> ในหน้านี้หรือใช้ <code>TELEGRAM_CHAT_ID</code> เป็นค่า default. กด <b>Send Test</b> ให้ผ่านก่อน แล้วค่อยรอ Cloud Scheduler หรือกด <b>Run Scanner Now</b> เพื่อทดสอบ rule ของ workspace นี้</p>
+        <b>Checklist</b>
+        <p>ใส่ <code>TELEGRAM_BOT_TOKEN</code> ใน API แล้วกด <b>Test</b>. ถ้าผ่าน ค่อยใช้ <b>Run Scanner</b> หรือรอ Cloud Scheduler.</p>
       </div>
 
       {scanSummary ? (
         <div className="scan-summary">
           <div className="summary-metrics">
-            <span>Rules: <b>{scanSummary.scannedRules}</b></span>
-            <span>Triggered: <b>{scanSummary.triggered}</b></span>
-            <span>Sent: <b>{scanSummary.telegramSent}</b></span>
-            <span>Skipped: <b>{scanSummary.skipped}</b></span>
-            <span>Errors: <b>{scanSummary.errors}</b></span>
+            <span>Rules <b>{scanSummary.scannedRules}</b></span>
+            <span>Trigger <b>{scanSummary.triggered}</b></span>
+            <span>Sent <b>{scanSummary.telegramSent}</b></span>
+            <span>Skip <b>{scanSummary.skipped}</b></span>
+            <span>Error <b>{scanSummary.errors}</b></span>
           </div>
-          <p className="muted">Scanned at {formatThaiDateTime(scanSummary.scannedAt)} · {scanSummary.durationMs} ms</p>
+          <p className="muted">Scanned {formatThaiDateTime(scanSummary.scannedAt)} · {scanSummary.durationMs} ms</p>
           <div className="signal-list">
             {scanSummary.results.map((item) => {
               const tone = getScanStatusTone(item.status);
@@ -158,9 +157,12 @@ function TelegramNotificationPanel() {
                 <div className="signal-card compact-card" key={`${item.ruleId}-${item.status}-${item.signalType ?? "none"}-${item.candleCloseTime ?? ""}`}>
                   <div className={`signal-dot ${tone === "neutral" ? "neutral" : tone}`} />
                   <div className="signal-content">
-                    <div className="signal-title-row"><b>{item.ruleName}</b><Badge tone={tone}>{item.status}</Badge></div>
-                    <span>{item.symbol} · {item.timeframe} · {item.signalType ?? "-"} · zone {item.zone ?? "-"} · {item.candleCloseTime ? `แท่งปิด ${formatThaiDateTime(item.candleCloseTime)} เวลาไทย` : "-"}</span>
-                    <span>{item.message}</span>
+                    <div className="signal-title-row">
+                      <b>{item.ruleName}</b>
+                      <Badge tone={tone}>{item.status}</Badge>
+                    </div>
+                    <span>{item.symbol} · {item.timeframe} · {item.signalType ?? "-"} · {item.zone ?? "-"}</span>
+                    <span>{item.candleCloseTime ? `ปิดแท่ง ${formatThaiTime(item.candleCloseTime)} · ` : ""}{item.message}</span>
                   </div>
                 </div>
               );
@@ -261,8 +263,11 @@ export function SignalRulesPage() {
       <section className="content-grid">
         <div className="card panel">
           <div className="panel-head">
-            <h3>Create Rule</h3>
-            <Badge tone="blue">Built-in / Custom</Badge>
+            <div>
+              <h3>Create Rule</h3>
+              <p className="muted">สร้างเงื่อนไขที่ scanner ต้องแจ้งเตือน</p>
+            </div>
+            <Badge tone="blue">Rule</Badge>
           </div>
           {error ? <div className="alert error">{error}</div> : null}
           <div className="form-grid single-on-mobile">
@@ -276,7 +281,13 @@ export function SignalRulesPage() {
         </div>
 
         <div className="card panel">
-          <div className="panel-head"><h3>Active Rules</h3><button className="btn" onClick={load}>Refresh</button></div>
+          <div className="panel-head">
+            <div>
+              <h3>Active Rules</h3>
+              <p className="muted">เปิด/ปิด rule ที่ scanner ใช้งาน</p>
+            </div>
+            <button className="btn" onClick={load}>Refresh</button>
+          </div>
           <div className="signal-list">
             {rules.map((rule) => (
               <div className="signal-card rule-card" key={rule.id}>
@@ -291,7 +302,7 @@ export function SignalRulesPage() {
                   </div>
                   <div className="rule-meta-grid">
                     <div><span>Symbol</span><b>{rule.symbol}</b></div>
-                    <div><span>Timeframe</span><b>{rule.timeframe}</b></div>
+                    <div><span>TF</span><b>{rule.timeframe}</b></div>
                     <div><span>Indicator</span><b>{rule.indicatorKey}</b></div>
                     <div><span>Condition</span><b>{rule.condition}</b></div>
                   </div>
