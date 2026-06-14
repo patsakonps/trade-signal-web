@@ -1,8 +1,21 @@
 import { useEffect, useState } from "react";
 import { BellRing, Play, Plus, Send, Trash2 } from "lucide-react";
 import { api, getErrorMessage } from "../lib/api";
-import type { IndicatorTemplate, ScannerSummary, SignalRule, TelegramNotificationResponse, TelegramNotificationSetting } from "../lib/types";
+import type { IndicatorTemplate, ScannerRuleResult, ScannerSummary, SignalRule, TelegramNotificationResponse, TelegramNotificationSetting } from "../lib/types";
 import { Badge } from "../components/Badge";
+
+function getScanStatusTone(status: ScannerRuleResult["status"]): "green" | "red" | "yellow" | "blue" | "neutral" {
+  if (status === "TRIGGERED") return "green";
+  if (status === "ERROR") return "red";
+  if (status === "SKIPPED") return "yellow";
+  if (status === "DUPLICATE") return "blue";
+  return "neutral";
+}
+
+function formatScanTime(value?: string) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
+}
 
 function TelegramNotificationPanel() {
   const [setting, setSetting] = useState<TelegramNotificationSetting>({ chatId: "", enabled: false });
@@ -73,7 +86,7 @@ function TelegramNotificationPanel() {
     try {
       const response = await api.post<ScannerSummary>("/api/scanner/run", {});
       setScanSummary(response.data);
-      setMessage(`Scanner done: ${response.data.triggered} triggered, ${response.data.telegramSent} Telegram sent`);
+      setMessage(`Scanner done: ${response.data.triggered} triggered, ${response.data.telegramSent} Telegram sent, ${response.data.errors} errors`);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -129,7 +142,7 @@ function TelegramNotificationPanel() {
 
       <div className="helper-box">
         <b>วิธีใช้</b>
-        <p>สร้าง bot ด้วย @BotFather แล้วใส่ token ใน API .env: <code>TELEGRAM_BOT_TOKEN=...</code> และจะใส่ <code>TELEGRAM_CHAT_ID=...</code> เป็นค่า default ก็ได้ จากนั้นส่งข้อความหา bot 1 ครั้ง แล้วหา chat id จาก Bot API getUpdates หรือจาก bot helper ที่คุณใช้ประจำ</p>
+        <p>สร้าง bot ด้วย @BotFather แล้วใส่ token ใน API .env: <code>TELEGRAM_BOT_TOKEN=...</code> จากนั้นใส่ <code>chatId</code> ในหน้านี้หรือใช้ <code>TELEGRAM_CHAT_ID</code> เป็นค่า default. กด <b>Send Test</b> ให้ผ่านก่อน แล้วค่อยรอ Cloud Scheduler หรือกด <b>Run Scanner Now</b> เพื่อทดสอบ rule ของ workspace นี้</p>
       </div>
 
       {scanSummary ? (
@@ -138,18 +151,24 @@ function TelegramNotificationPanel() {
             <span>Rules: <b>{scanSummary.scannedRules}</b></span>
             <span>Triggered: <b>{scanSummary.triggered}</b></span>
             <span>Sent: <b>{scanSummary.telegramSent}</b></span>
+            <span>Skipped: <b>{scanSummary.skipped}</b></span>
             <span>Errors: <b>{scanSummary.errors}</b></span>
           </div>
+          <p className="muted">Scanned at {formatScanTime(scanSummary.scannedAt)} · {scanSummary.durationMs} ms</p>
           <div className="signal-list">
-            {scanSummary.results.slice(0, 8).map((item) => (
-              <div className="signal-card compact-card" key={`${item.ruleId}-${item.status}-${item.signalType ?? "none"}`}>
-                <div className={`signal-dot ${item.status === "TRIGGERED" ? "green" : item.status === "ERROR" ? "red" : "neutral"}`} />
-                <div className="signal-content">
-                  <div className="signal-title-row"><b>{item.ruleName}</b><Badge tone={item.status === "TRIGGERED" ? "green" : item.status === "ERROR" ? "red" : "neutral"}>{item.status}</Badge></div>
-                  <span>{item.symbol} · {item.timeframe} · {item.signalType ?? "-"} · {item.message}</span>
+            {scanSummary.results.map((item) => {
+              const tone = getScanStatusTone(item.status);
+              return (
+                <div className="signal-card compact-card" key={`${item.ruleId}-${item.status}-${item.signalType ?? "none"}-${item.candleCloseTime ?? ""}`}>
+                  <div className={`signal-dot ${tone === "neutral" ? "neutral" : tone}`} />
+                  <div className="signal-content">
+                    <div className="signal-title-row"><b>{item.ruleName}</b><Badge tone={tone}>{item.status}</Badge></div>
+                    <span>{item.symbol} · {item.timeframe} · {item.signalType ?? "-"} · zone {item.zone ?? "-"} · {item.candleCloseTime ? formatScanTime(item.candleCloseTime) : "-"}</span>
+                    <span>{item.message}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ) : null}
@@ -166,6 +185,7 @@ export function SignalRulesPage() {
   const [indicatorKey, setIndicatorKey] = useState("CDC_ACTION_ZONE");
   const [condition, setCondition] = useState("BUY_OR_SELL");
   const [error, setError] = useState("");
+  const [savingRule, setSavingRule] = useState(false);
 
   async function load() {
     setError("");
@@ -188,7 +208,17 @@ export function SignalRulesPage() {
   async function createRule() {
     const template = templates.find((item) => item.key === indicatorKey);
     if (!template) return;
+    if (!name.trim()) {
+      setError("Rule name is required");
+      return;
+    }
+    if (!symbol.trim()) {
+      setError("Symbol is required");
+      return;
+    }
 
+    setSavingRule(true);
+    setError("");
     try {
       await api.post("/api/signal-rules", {
         name,
@@ -205,6 +235,8 @@ export function SignalRulesPage() {
       await load();
     } catch (err) {
       setError(getErrorMessage(err));
+    } finally {
+      setSavingRule(false);
     }
   }
 
@@ -244,7 +276,7 @@ export function SignalRulesPage() {
             <label>Indicator<select value={indicatorKey} onChange={(event) => setIndicatorKey(event.target.value)}>{templates.map((item) => <option key={item.key} value={item.key}>{item.name}</option>)}</select></label>
             <label>Condition<select value={condition} onChange={(event) => setCondition(event.target.value)}><option>BUY_OR_SELL</option><option>BUY</option><option>SELL</option><option>GREEN</option><option>RED</option><option>YELLOW</option><option>BLUE</option><option>ZONE_CHANGED</option></select></label>
           </div>
-          <button className="btn primary full-on-mobile" onClick={createRule}><Plus size={16} /> Save Rule</button>
+          <button className="btn primary full-on-mobile" onClick={createRule} disabled={savingRule}><Plus size={16} /> {savingRule ? "Saving" : "Save Rule"}</button>
         </div>
 
         <div className="card panel">

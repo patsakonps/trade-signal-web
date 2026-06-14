@@ -81,6 +81,8 @@ export type ScannerRuleResult = {
   zone?: string;
   message: string;
   telegramSent?: boolean;
+  candleCloseTime?: string;
+  price?: number;
 };
 
 export type TelegramNotificationResponse = {
@@ -90,6 +92,8 @@ export type TelegramNotificationResponse = {
 };
 
 export type ScannerSummary = {
+  scannedAt: string;
+  durationMs: number;
   scannedRules: number;
   triggered: number;
   telegramSent: number;
