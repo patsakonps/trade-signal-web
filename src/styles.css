@@ -132,6 +132,7 @@ label { color: var(--muted); font-size: 12px; font-weight: 800; display: flex; f
 .signal-title-row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
 .signal-card b { display: block; font-size: 13px; margin-bottom: 4px; }
 .signal-card span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.signal-content > span { display: block; }
 
 .indicator-card { padding: 15px; border-radius: 18px; background: rgba(255,255,255,.052); border: 1px solid var(--border); display: flex; justify-content: space-between; gap: 14px; align-items: center; }
 .indicator-card p { color: var(--muted); margin: 7px 0 0; font-size: 13px; line-height: 1.5; }
@@ -303,7 +304,25 @@ tr:hover td { background: rgba(255,255,255,.035); }
 .mobile-actions { justify-content: flex-end; }
 .signal-card .btn.small { flex: 0 0 auto; }
 
+
+.history-signal-card { align-items: stretch; justify-content: space-between; }
+.history-signal-main { display: flex; gap: 12px; min-width: 0; flex: 1; }
+.history-title-row { margin-bottom: 10px; }
+.history-meta-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+.history-meta-grid div { min-width: 0; padding: 10px; border-radius: 13px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.07); }
+.history-meta-grid span { display: block; margin-bottom: 4px; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.history-meta-grid b { display: block; color: var(--text); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; word-break: normal; }
+.history-created-at { margin-top: 9px; }
+.history-chart-btn { align-self: flex-start; white-space: nowrap; }
+
 @media (max-width: 720px) {
   .table-actions.mobile-actions { justify-content: flex-end; }
-  .signal-card .btn.small { width: 100%; }
+  .signal-card { display: grid; grid-template-columns: auto minmax(0, 1fr); }
+  .signal-card .btn.small { grid-column: 1 / -1; width: 100%; }
+  .history-signal-card { display: flex; flex-direction: column; gap: 12px; }
+  .history-signal-main { width: 100%; }
+  .history-title-row { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+  .history-meta-grid { grid-template-columns: 1fr; gap: 8px; }
+  .history-meta-grid div { padding: 9px 10px; }
+  .history-chart-btn { align-self: stretch; }
 }

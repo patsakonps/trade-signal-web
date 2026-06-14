@@ -151,17 +151,36 @@ export function DashboardPage() {
         {historyError ? <div className="alert error">{historyError}</div> : null}
         <div className="signal-list">
           {signals.map((signal) => (
-            <div className="signal-card" key={signal.id}>
-              <div className={`signal-dot ${toneFromZone(signal.signalType)}`} />
-              <div className="signal-content">
-                <div className="signal-title-row">
-                  <b>{signal.symbol} · {signal.signalType}</b>
-                  <Badge tone={toneFromZone(signal.signalType)}>{signal.zone ?? signal.signalType}</Badge>
+            <div className="signal-card history-signal-card" key={signal.id}>
+              <div className="history-signal-main">
+                <div className={`signal-dot ${toneFromZone(signal.signalType)}`} />
+                <div className="signal-content">
+                  <div className="signal-title-row history-title-row">
+                    <b>{signal.symbol} · {signal.signalType}</b>
+                    <Badge tone={toneFromZone(signal.signalType)}>{signal.zone ?? signal.signalType}</Badge>
+                  </div>
+                  <div className="history-meta-grid">
+                    <div>
+                      <span>Timeframe</span>
+                      <b>{signal.timeframe}</b>
+                    </div>
+                    <div>
+                      <span>Rule</span>
+                      <b>{signal.rule?.name ?? "Rule deleted"}</b>
+                    </div>
+                    <div>
+                      <span>Price</span>
+                      <b>{formatPrice(signal.price)}</b>
+                    </div>
+                    <div>
+                      <span>Candle close</span>
+                      <b>{formatThaiDateTime(signal.candleCloseTime)}</b>
+                    </div>
+                  </div>
+                  <span className="history-created-at">บันทึก {formatTimeAgoThai(signal.createdAt)} · เวลาไทย</span>
                 </div>
-                <span>{signal.timeframe} · {signal.rule?.name ?? "Rule deleted"} · ราคา {formatPrice(signal.price)}</span>
-                <span>แท่งปิดเวลา {formatThaiDateTime(signal.candleCloseTime)} เวลาไทย · บันทึก {formatTimeAgoThai(signal.createdAt)}</span>
               </div>
-              <a className="btn small" href={getTradingViewChartUrl(signal.symbol)} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Chart</a>
+              <a className="btn small history-chart-btn" href={getTradingViewChartUrl(signal.symbol)} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Chart</a>
             </div>
           ))}
           {!signals.length ? <p className="muted">ยังไม่มี signal history จาก scanner</p> : null}
