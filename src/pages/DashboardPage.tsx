@@ -56,6 +56,7 @@ export function DashboardPage() {
             <div className="inline-form compact">
               <input value={symbol} onChange={(event) => setSymbol(event.target.value.toUpperCase())} />
               <select value={timeframe} onChange={(event) => setTimeframe(event.target.value)}>
+                <option>5m</option>
                 <option>15m</option>
                 <option>1h</option>
                 <option>4h</option>
