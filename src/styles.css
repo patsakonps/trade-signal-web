@@ -326,3 +326,24 @@ tr:hover td { background: rgba(255,255,255,.035); }
   .history-meta-grid div { padding: 9px 10px; }
   .history-chart-btn { align-self: stretch; }
 }
+
+.rule-card { align-items: flex-start; }
+.rule-card-content { min-width: 0; }
+.rule-title-row { align-items: flex-start; gap: 10px; }
+.rule-title-row > div { min-width: 0; }
+.rule-title-row b { overflow-wrap: anywhere; }
+.rule-card-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.rule-meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.rule-meta-grid div { min-width: 0; padding: 9px 10px; border-radius: 13px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.07); }
+.rule-meta-grid span { display: block; margin-bottom: 4px; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.rule-meta-grid b { display: block; color: var(--text); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; word-break: normal; }
+
+@media (max-width: 720px) {
+  .rule-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; }
+  .rule-card-content { width: 100%; }
+  .rule-title-row { flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .rule-meta-grid { grid-template-columns: 1fr; gap: 8px; }
+  .rule-card-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; width: 100%; gap: 8px; }
+  .rule-card .rule-card-actions .btn.small { grid-column: auto; width: 100%; }
+  .rule-card .rule-card-actions .icon-btn { width: 44px; height: 42px; }
+}

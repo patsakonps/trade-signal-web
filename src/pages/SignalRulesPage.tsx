@@ -279,14 +279,27 @@ export function SignalRulesPage() {
           <div className="panel-head"><h3>Active Rules</h3><button className="btn" onClick={load}>Refresh</button></div>
           <div className="signal-list">
             {rules.map((rule) => (
-              <div className="signal-card" key={rule.id}>
+              <div className="signal-card rule-card" key={rule.id}>
                 <div className={`signal-dot ${rule.enabled ? "green" : "neutral"}`} />
-                <div className="signal-content">
-                  <div className="signal-title-row"><b>{rule.name}</b><Badge tone={rule.enabled ? "green" : "neutral"}>{rule.enabled ? "ON" : "OFF"}</Badge></div>
-                  <span>{rule.symbol} · {rule.timeframe} · {rule.indicatorKey} · {rule.condition}</span>
+                <div className="signal-content rule-card-content">
+                  <div className="signal-title-row rule-title-row">
+                    <div>
+                      <b>{rule.name}</b>
+                      <span>{rule.symbol} · {rule.timeframe}</span>
+                    </div>
+                    <Badge tone={rule.enabled ? "green" : "neutral"}>{rule.enabled ? "ON" : "OFF"}</Badge>
+                  </div>
+                  <div className="rule-meta-grid">
+                    <div><span>Symbol</span><b>{rule.symbol}</b></div>
+                    <div><span>Timeframe</span><b>{rule.timeframe}</b></div>
+                    <div><span>Indicator</span><b>{rule.indicatorKey}</b></div>
+                    <div><span>Condition</span><b>{rule.condition}</b></div>
+                  </div>
                 </div>
-                <button className="btn small" onClick={() => toggleRule(rule)}>{rule.enabled ? "Disable" : "Enable"}</button>
-                <button className="icon-btn danger" onClick={() => deleteRule(rule.id)}><Trash2 size={16} /></button>
+                <div className="rule-card-actions">
+                  <button className="btn small" onClick={() => toggleRule(rule)}>{rule.enabled ? "Disable" : "Enable"}</button>
+                  <button className="icon-btn danger" onClick={() => deleteRule(rule.id)}><Trash2 size={16} /></button>
+                </div>
               </div>
             ))}
             {!rules.length ? <p className="muted">ยังไม่มี rule</p> : null}
