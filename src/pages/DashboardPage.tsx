@@ -49,6 +49,9 @@ function getAlertZone(
   const normalized = alertName.toLowerCase();
   if (normalized.includes("oversold")) return "OVERSOLD";
   if (normalized.includes("overbought")) return "OVERBOUGHT";
+  if (normalized.includes("bullish")) return "BUY";
+  if (normalized.includes("bearish")) return "SELL";
+  if (normalized.includes("squat")) return "RED";
   return latestSignal;
 }
 
@@ -69,6 +72,30 @@ function getOscillatorToneSource(state: unknown, zone?: string) {
   if (state === "BULLISH") return "GREEN";
   if (state === "BEARISH") return "RED";
   return zone;
+}
+
+function getFlowStateLabel(primary: unknown, fallback?: unknown) {
+  const first = primary === undefined || primary === null || primary === "NONE" ? fallback : primary;
+  if (first === undefined || first === null || first === "") return "WAITING";
+  return String(first).replace(/_/g, " ");
+}
+
+function getFlowToneSource(indicatorKey: string, latest: IndicatorResult["latest"] | undefined, latestZone?: string) {
+  if (indicatorKey === "CVD_TAKER_DELTA") {
+    if (latest?.signal === "BUY") return "GREEN";
+    if (latest?.signal === "SELL") return "RED";
+    if (latest?.values.Direction === "BUYERS") return "GREEN";
+    if (latest?.values.Direction === "SELLERS") return "RED";
+  }
+
+  if (indicatorKey === "BILL_WILLIAMS_MFI") {
+    if (latest?.values.State === "SQUAT") return "RED";
+    if (latest?.values.State === "FAKE") return "YELLOW";
+    if (latest?.values.State === "FADE") return "BLUE";
+    if (latest?.values.State === "GREEN") return "GREEN";
+  }
+
+  return latestZone;
 }
 
 function getLatestCloseTime(
@@ -164,17 +191,67 @@ export function DashboardPage() {
   const activeIndicatorKey = result?.indicatorKey ?? indicatorKey;
   const isRsi = activeIndicatorKey === "RSI_14";
   const isAdaptiveRsi = activeIndicatorKey === "ADAPTIVE_RSI_TRIGGER";
+  const isCvd = activeIndicatorKey === "CVD_TAKER_DELTA";
+  const isBwMfi = activeIndicatorKey === "BILL_WILLIAMS_MFI";
   const isOscillator = isRsi || isAdaptiveRsi;
   const oscillatorLabel = isAdaptiveRsi ? "Adaptive RSI" : "RSI";
   const latestSignal = latest?.signal || "-";
   const latestZone = latest?.zone || "-";
   const latestOscillator = isAdaptiveRsi ? latest?.values.AdaptiveRSI : latest?.values.RSI;
   const latestTrigger = latest?.values.Trigger;
+  const latestCvd = latest?.values.CVD;
+  const latestDelta = latest?.values.Delta;
+  const latestDeltaPercent = latest?.values.DeltaPercent;
+  const latestBwMfi = latest?.values.BWMFI;
+  const latestBwState = latest?.values.State;
+  const latestVolume = latest?.values.Volume;
+  const latestSpread = latest?.values.Spread;
   const latestOscillatorState = getOscillatorStateLabel(latest?.values.State);
-  const stateValue = isOscillator ? latestOscillatorState : latestZone;
+  const primaryLabel = isOscillator ? oscillatorLabel : isCvd ? "CVD" : isBwMfi ? "BW MFI" : "Price";
+  const primaryValue = isOscillator
+    ? formatNumber(latestOscillator)
+    : isCvd
+      ? formatNumber(latestCvd, 0)
+      : isBwMfi
+        ? formatNumber(latestBwMfi, 10)
+        : formatPrice(latest?.price);
+  const primarySub = isAdaptiveRsi
+    ? `Trigger ${formatNumber(latestTrigger)} · price ${formatPrice(latest?.price)}`
+    : isOscillator
+      ? `${symbol} · ${timeframe} · price ${formatPrice(latest?.price)}`
+      : isCvd
+        ? `Delta ${formatNumber(latestDelta, 0)} (${formatNumber(latestDeltaPercent)}%) · price ${formatPrice(latest?.price)}`
+        : isBwMfi
+          ? `Vol ${formatNumber(latestVolume, 0)} · spread ${formatNumber(latestSpread, 4)}`
+          : `${symbol} · ${timeframe}`;
+  const stateLabel = isOscillator || isBwMfi ? "State" : isCvd ? "Flow" : "Zone";
+  const stateValue = isOscillator
+    ? latestOscillatorState
+    : isCvd
+      ? getFlowStateLabel(latest?.values.Divergence, latest?.values.Direction)
+      : isBwMfi
+        ? getFlowStateLabel(latestBwState)
+        : latestZone;
   const stateToneSource = isOscillator
     ? getOscillatorToneSource(latest?.values.State, latestZone)
-    : latestZone;
+    : getFlowToneSource(activeIndicatorKey, latest, latestZone);
+  const summaryLabel = isOscillator ? oscillatorLabel : isCvd ? "CVD / Delta" : isBwMfi ? "MFI / Vol" : "Indicator";
+  const summaryValue = isAdaptiveRsi
+    ? `${formatNumber(latestOscillator)} / ${formatNumber(latestTrigger)}`
+    : isOscillator
+      ? formatNumber(latestOscillator)
+      : isCvd
+        ? `${formatNumber(latestCvd, 0)} / ${formatNumber(latestDelta, 0)}`
+        : isBwMfi
+          ? `${formatNumber(latestBwMfi, 10)} / ${formatNumber(latestVolume, 0)}`
+          : indicatorKey;
+  const alertMetric = isOscillator
+    ? { label: oscillatorLabel, value: latestOscillator }
+    : isCvd
+      ? { label: "CVD", value: latestCvd }
+      : isBwMfi
+        ? { label: "BW MFI", value: latestBwMfi }
+        : null;
   const latestCloseTime = getLatestCloseTime(result);
   const stale = isDataStale(latestCloseTime, timeframe);
   const triggeredAlerts =
@@ -184,25 +261,19 @@ export function DashboardPage() {
     <div className="page-stack">
       <section className="stats-grid">
         <StatCard
-          label={isOscillator ? oscillatorLabel : "Price"}
-          value={isOscillator ? formatNumber(latestOscillator) : formatPrice(latest?.price)}
-          sub={
-            isAdaptiveRsi
-              ? `Trigger ${formatNumber(latestTrigger)} · price ${formatPrice(latest?.price)}`
-              : isOscillator
-                ? `${symbol} · ${timeframe} · price ${formatPrice(latest?.price)}`
-                : `${symbol} · ${timeframe}`
-          }
+          label={primaryLabel}
+          value={primaryValue}
+          sub={primarySub}
           tone="blue"
         />
         <StatCard
-          label={isOscillator ? "State" : "Zone"}
+          label={stateLabel}
           value={stateValue}
           sub={
             latestCloseTime
               ? `ปิด ${formatThaiTime(latestCloseTime)}`
-              : isOscillator
-                ? `${oscillatorLabel} state`
+              : stateLabel === "State"
+                ? `${primaryLabel} state`
                 : "indicator zone"
           }
           tone={
@@ -307,7 +378,7 @@ export function DashboardPage() {
           <MiniChart result={result} />
           <div className="chart-summary-grid">
             <div className="chart-summary-item">
-              <span>{isOscillator ? "State" : "Zone"}</span>
+              <span>{stateLabel}</span>
               <Badge tone={toneFromZone(stateToneSource)}>{stateValue}</Badge>
             </div>
             <div className="chart-summary-item">
@@ -315,14 +386,8 @@ export function DashboardPage() {
               <Badge tone={toneFromZone(latestSignal)}>{latestSignal}</Badge>
             </div>
             <div className="chart-summary-item">
-              <span>{isOscillator ? oscillatorLabel : "Indicator"}</span>
-              <b>
-                {isAdaptiveRsi
-                  ? `${formatNumber(latestOscillator)} / ${formatNumber(latestTrigger)}`
-                  : isOscillator
-                    ? formatNumber(latestOscillator)
-                    : indicatorKey}
-              </b>
+              <span>{summaryLabel}</span>
+              <b>{summaryValue}</b>
             </div>
             <div className="chart-summary-item">
               <span>Close</span>

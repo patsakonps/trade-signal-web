@@ -6,6 +6,23 @@ import { Badge } from "../components/Badge";
 import { formatThaiDateTime, formatThaiTime } from "../lib/time";
 import { chartTimeframes } from "../lib/timeframes";
 
+
+const conditionOptions = [
+  "BUY_OR_SELL",
+  "BUY",
+  "SELL",
+  "GREEN",
+  "RED",
+  "YELLOW",
+  "BLUE",
+  "ZONE_CHANGED",
+  "OVERSOLD",
+  "OVERBOUGHT",
+  "BULLISH_DIVERGENCE",
+  "BEARISH_DIVERGENCE",
+  "SQUAT"
+];
+
 function getScanStatusTone(status: ScannerRuleResult["status"]): "green" | "red" | "yellow" | "blue" | "neutral" {
   if (status === "TRIGGERED") return "green";
   if (status === "ERROR") return "red";
@@ -276,7 +293,7 @@ export function SignalRulesPage() {
             <label>Symbol<input value={symbol} onChange={(event) => setSymbol(event.target.value.toUpperCase())} /></label>
             <label>Timeframe<select value={timeframe} onChange={(event) => setTimeframe(event.target.value)}>{chartTimeframes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
             <label>Indicator<select value={indicatorKey} onChange={(event) => setIndicatorKey(event.target.value)}>{templates.map((item) => <option key={item.key} value={item.key}>{item.name}</option>)}</select></label>
-            <label>Condition<select value={condition} onChange={(event) => setCondition(event.target.value)}><option>BUY_OR_SELL</option><option>BUY</option><option>SELL</option><option>GREEN</option><option>RED</option><option>YELLOW</option><option>BLUE</option><option>ZONE_CHANGED</option><option>OVERSOLD</option><option>OVERBOUGHT</option></select></label>
+            <label>Condition<select value={condition} onChange={(event) => setCondition(event.target.value)}>{conditionOptions.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
           </div>
           <button className="btn primary full-on-mobile" onClick={createRule} disabled={savingRule}><Plus size={16} /> {savingRule ? "Saving" : "Save Rule"}</button>
         </div>

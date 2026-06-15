@@ -4,7 +4,7 @@ type MiniChartProps = {
   result?: IndicatorResult | null;
 };
 
-type ChartPoint = { x: number; y: number; value?: number };
+type ChartPoint = { x: number; y: number; value?: number; index: number };
 
 function toFiniteNumber(value: unknown): number | null {
   const parsed = Number(value);
@@ -48,6 +48,15 @@ function getOscillatorValue(point: IndicatorResult["series"][number], indicatorK
   return null;
 }
 
+function getMfiStateClass(state: unknown): string {
+  const normalized = String(state ?? "WAITING").toLowerCase();
+  if (normalized === "squat") return "squat";
+  if (normalized === "fake") return "fake";
+  if (normalized === "fade") return "fade";
+  if (normalized === "green") return "green";
+  return "waiting";
+}
+
 export function MiniChart({ result }: MiniChartProps) {
   const series = result?.series?.slice(-80) ?? [];
   const width = 720;
@@ -56,6 +65,8 @@ export function MiniChart({ result }: MiniChartProps) {
   const indicatorKey = result?.indicatorKey;
   const isOscillator = isOscillatorIndicator(indicatorKey);
   const isAdaptiveRsi = indicatorKey === "ADAPTIVE_RSI_TRIGGER";
+  const isCvd = indicatorKey === "CVD_TAKER_DELTA";
+  const isBwMfi = indicatorKey === "BILL_WILLIAMS_MFI";
 
   if (!series.length) {
     return <div className="chart-empty">ยังไม่มีข้อมูลกราฟ</div>;
@@ -63,16 +74,23 @@ export function MiniChart({ result }: MiniChartProps) {
 
   const oscillatorValues = series.map((point) => getOscillatorValue(point, indicatorKey));
   const triggerValues = series.map((point) => toFiniteNumber(point.values.Trigger));
+  const cvdValues = series.map((point) => toFiniteNumber(point.values.CVD));
+  const deltaValues = series.map((point) => toFiniteNumber(point.values.Delta));
+  const bwMfiValues = series.map((point) => toFiniteNumber(point.values.BWMFI));
   const overbought = toFiniteNumber(result?.latest?.values.Overbought) ?? (isAdaptiveRsi ? 80 : 70);
   const oversold = toFiniteNumber(result?.latest?.values.Oversold) ?? (isAdaptiveRsi ? 20 : 30);
 
   const chartValues = isOscillator
     ? [0, 100, overbought, oversold, ...oscillatorValues.filter((value): value is number => value !== null), ...triggerValues.filter((value): value is number => value !== null)]
-    : series.flatMap((point) =>
-        [point.price, point.values.Fast, point.values.Slow, point.values.HalfTrend, point.values.ATRHigh, point.values.ATRLow]
-          .map(toFiniteNumber)
-          .filter((value): value is number => value !== null)
-      );
+    : isCvd
+      ? [0, ...cvdValues.filter((value): value is number => value !== null)]
+      : isBwMfi
+        ? [0, ...bwMfiValues.filter((value): value is number => value !== null)]
+        : series.flatMap((point) =>
+            [point.price, point.values.Fast, point.values.Slow, point.values.HalfTrend, point.values.ATRHigh, point.values.ATRLow]
+              .map(toFiniteNumber)
+              .filter((value): value is number => value !== null)
+          );
 
   if (!chartValues.length) {
     return <div className="chart-empty">ข้อมูลกราฟไม่ถูกต้อง</div>;
@@ -83,8 +101,8 @@ export function MiniChart({ result }: MiniChartProps) {
   const rawRange = rawMax - rawMin;
   const fallbackRange = Math.max(Math.abs(rawMax), Math.abs(rawMin), 1) * 0.002;
   const domainRange = rawRange > 0 ? rawRange : fallbackRange;
-  const domainPadding = isOscillator ? 0 : domainRange * 0.12;
-  const min = rawMin - domainPadding;
+  const domainPadding = isOscillator ? 0 : isBwMfi ? domainRange * 0.18 : domainRange * 0.12;
+  const min = isBwMfi ? Math.max(0, rawMin - domainPadding) : rawMin - domainPadding;
   const max = rawMax + domainPadding;
   const range = max - min;
 
@@ -93,33 +111,58 @@ export function MiniChart({ result }: MiniChartProps) {
 
   const fastPoints = series.flatMap((point, index) => {
     const value = toFiniteNumber(point.values.Fast);
-    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value }];
+    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value, index }];
   });
 
   const slowPoints = series.flatMap((point, index) => {
     const value = toFiniteNumber(point.values.Slow);
-    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value }];
+    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value, index }];
   });
 
   const halfTrendPoints = series.flatMap((point, index) => {
     const value = toFiniteNumber(point.values.HalfTrend);
-    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value }];
+    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value, index }];
   });
 
   const oscillatorPoints = series.flatMap((point, index) => {
     const value = getOscillatorValue(point, indicatorKey);
-    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value }];
+    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value, index }];
   });
 
   const triggerPoints = series.flatMap((point, index) => {
     const value = toFiniteNumber(point.values.Trigger);
-    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value }];
+    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value, index }];
   });
+
+  const cvdPoints = series.flatMap((point, index) => {
+    const value = toFiniteNumber(point.values.CVD);
+    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value, index }];
+  });
+
+  const bwMfiPoints = series.flatMap((point, index) => {
+    const value = toFiniteNumber(point.values.BWMFI);
+    return value === null ? [] : [{ x: xFor(index), y: yFor(value), value, index }];
+  });
+
+  const deltaMaxAbs = Math.max(...deltaValues.map((value) => Math.abs(value ?? 0)), 1);
+  const deltaBaseline = height - padding - 4;
+  const deltaMaxHeight = 54;
+  const bwBarWidth = clamp(((width - padding * 2) / Math.max(series.length, 1)) * 0.56, 3, 9);
 
   const markerYFor = (point: (typeof series)[number]) => {
     if (isOscillator) {
       const oscillator = getOscillatorValue(point, indicatorKey);
       return oscillator === null ? null : yFor(oscillator);
+    }
+
+    if (isCvd) {
+      const cvd = toFiniteNumber(point.values.CVD);
+      return cvd === null ? null : yFor(cvd);
+    }
+
+    if (isBwMfi) {
+      const bwMfi = toFiniteNumber(point.values.BWMFI);
+      return bwMfi === null ? null : yFor(bwMfi);
     }
 
     const price = toFiniteNumber(point.price);
@@ -181,6 +224,49 @@ export function MiniChart({ result }: MiniChartProps) {
                 <text x="75" y="15">Rainbow RSI</text>
               </g>
             ) : null}
+          </>
+        ) : isCvd ? (
+          <>
+            {min < 0 && max > 0 ? <line x1={padding} x2={width - padding} y1={yFor(0)} y2={yFor(0)} className="zero-line" /> : null}
+            {series.map((point, index) => {
+              const delta = toFiniteNumber(point.values.Delta);
+              if (delta === null) return null;
+              const x = xFor(index);
+              const heightAbs = Math.max(2, (Math.abs(delta) / deltaMaxAbs) * deltaMaxHeight);
+              const y = delta >= 0 ? deltaBaseline - heightAbs : deltaBaseline;
+              return <rect key={`delta-${point.time}-${index}`} className={`delta-bar ${delta >= 0 ? "positive" : "negative"}`} x={x - 2.7} y={y} width="5.4" height={heightAbs} rx="2" />;
+            })}
+            {cvdPoints.length ? <path d={pathFrom(cvdPoints)} className="line-cvd" /> : null}
+            <g className="flow-legend" transform={`translate(${width - padding - 132}, ${padding + 2})`}>
+              <rect x="0" y="0" width="132" height="28" rx="10" />
+              <line x1="11" x2="39" y1="14" y2="14" className="line-cvd sample" />
+              <text x="48" y="16">CVD + Delta</text>
+            </g>
+          </>
+        ) : isBwMfi ? (
+          <>
+            <line x1={padding} x2={width - padding} y1={yFor(0)} y2={yFor(0)} className="zero-line" />
+            {bwMfiPoints.map((point) => {
+              const source = series[point.index];
+              const barHeight = Math.max(2, yFor(0) - point.y);
+              return (
+                <rect
+                  key={`bw-mfi-${source.time}-${point.index}`}
+                  className={`mfi-bar ${getMfiStateClass(source.values.State)}`}
+                  x={point.x - bwBarWidth / 2}
+                  y={point.y}
+                  width={bwBarWidth}
+                  height={barHeight}
+                  rx="3"
+                />
+              );
+            })}
+            {bwMfiPoints.length ? <path d={pathFrom(bwMfiPoints)} className="line-bw-mfi" /> : null}
+            <g className="flow-legend" transform={`translate(${width - padding - 146}, ${padding + 2})`}>
+              <rect x="0" y="0" width="146" height="28" rx="10" />
+              <circle cx="16" cy="14" r="4" className="mfi-dot squat" />
+              <text x="28" y="16">Squat watch</text>
+            </g>
           </>
         ) : (
           <>
