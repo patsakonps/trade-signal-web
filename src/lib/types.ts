@@ -11,6 +11,15 @@ export type Candle = {
   takerBuyQuoteVolume?: number;
 };
 
+export type NormalizedSignal = "BUY" | "SELL" | "NEUTRAL";
+export type NormalizedStrength = "WEAK" | "NORMAL" | "STRONG";
+
+export type NormalizedOpinion = {
+  signal: NormalizedSignal;
+  strength: NormalizedStrength;
+  reason: string;
+};
+
 export type IndicatorSeriesPoint = {
   time: number;
   closeTime?: number;
@@ -18,6 +27,7 @@ export type IndicatorSeriesPoint = {
   zone?: string;
   signal?: string;
   color?: string;
+  opinion?: NormalizedOpinion;
   values: Record<string, number | string | boolean | null>;
 };
 
