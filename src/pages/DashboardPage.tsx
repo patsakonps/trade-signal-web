@@ -30,11 +30,13 @@ function formatNumber(value: unknown, maximumFractionDigits = 2) {
   return parsed.toLocaleString(undefined, { maximumFractionDigits });
 }
 
-function getRsiStateLabel(value: unknown) {
+function getOscillatorStateLabel(value: unknown) {
   if (value === "OVERBOUGHT") return "OVERBOUGHT";
   if (value === "OVERSOLD") return "OVERSOLD";
   if (value === "ABOVE_50") return "ABOVE 50";
   if (value === "BELOW_50") return "BELOW 50";
+  if (value === "BULLISH") return "BULLISH";
+  if (value === "BEARISH") return "BEARISH";
   return "WAITING";
 }
 
@@ -54,16 +56,18 @@ function getAlertDescription(
   triggered: boolean,
   closeTime?: number,
   price?: number,
-  rsi?: unknown,
+  oscillator?: { label: string; value: unknown } | null,
 ) {
   const base = shortSignalDescription(triggered, closeTime, price);
-  if (rsi === undefined || rsi === null) return base;
-  return `${base} · RSI ${formatNumber(rsi)}`;
+  if (!oscillator || oscillator.value === undefined || oscillator.value === null) return base;
+  return `${base} · ${oscillator.label} ${formatNumber(oscillator.value)}`;
 }
 
-function getRsiToneSource(state: unknown, zone?: string) {
+function getOscillatorToneSource(state: unknown, zone?: string) {
   if (state === "OVERBOUGHT") return "OVERBOUGHT";
   if (state === "OVERSOLD") return "OVERSOLD";
+  if (state === "BULLISH") return "GREEN";
+  if (state === "BEARISH") return "RED";
   return zone;
 }
 
@@ -157,14 +161,19 @@ export function DashboardPage() {
   }, []);
 
   const latest = result?.latest;
-  const isRsi = result?.indicatorKey === "RSI_14" || indicatorKey === "RSI_14";
+  const activeIndicatorKey = result?.indicatorKey ?? indicatorKey;
+  const isRsi = activeIndicatorKey === "RSI_14";
+  const isAdaptiveRsi = activeIndicatorKey === "ADAPTIVE_RSI_TRIGGER";
+  const isOscillator = isRsi || isAdaptiveRsi;
+  const oscillatorLabel = isAdaptiveRsi ? "Adaptive RSI" : "RSI";
   const latestSignal = latest?.signal || "-";
   const latestZone = latest?.zone || "-";
-  const latestRsi = latest?.values.RSI;
-  const latestRsiState = getRsiStateLabel(latest?.values.State);
-  const stateValue = isRsi ? latestRsiState : latestZone;
-  const stateToneSource = isRsi
-    ? getRsiToneSource(latest?.values.State, latestZone)
+  const latestOscillator = isAdaptiveRsi ? latest?.values.AdaptiveRSI : latest?.values.RSI;
+  const latestTrigger = latest?.values.Trigger;
+  const latestOscillatorState = getOscillatorStateLabel(latest?.values.State);
+  const stateValue = isOscillator ? latestOscillatorState : latestZone;
+  const stateToneSource = isOscillator
+    ? getOscillatorToneSource(latest?.values.State, latestZone)
     : latestZone;
   const latestCloseTime = getLatestCloseTime(result);
   const stale = isDataStale(latestCloseTime, timeframe);
@@ -175,23 +184,25 @@ export function DashboardPage() {
     <div className="page-stack">
       <section className="stats-grid">
         <StatCard
-          label={isRsi ? "RSI" : "Price"}
-          value={isRsi ? formatNumber(latestRsi) : formatPrice(latest?.price)}
+          label={isOscillator ? oscillatorLabel : "Price"}
+          value={isOscillator ? formatNumber(latestOscillator) : formatPrice(latest?.price)}
           sub={
-            isRsi
-              ? `${symbol} · ${timeframe} · price ${formatPrice(latest?.price)}`
-              : `${symbol} · ${timeframe}`
+            isAdaptiveRsi
+              ? `Trigger ${formatNumber(latestTrigger)} · price ${formatPrice(latest?.price)}`
+              : isOscillator
+                ? `${symbol} · ${timeframe} · price ${formatPrice(latest?.price)}`
+                : `${symbol} · ${timeframe}`
           }
           tone="blue"
         />
         <StatCard
-          label={isRsi ? "State" : "Zone"}
+          label={isOscillator ? "State" : "Zone"}
           value={stateValue}
           sub={
             latestCloseTime
               ? `ปิด ${formatThaiTime(latestCloseTime)}`
-              : isRsi
-                ? "RSI state"
+              : isOscillator
+                ? `${oscillatorLabel} state`
                 : "indicator zone"
           }
           tone={
@@ -296,7 +307,7 @@ export function DashboardPage() {
           <MiniChart result={result} />
           <div className="chart-summary-grid">
             <div className="chart-summary-item">
-              <span>{isRsi ? "State" : "Zone"}</span>
+              <span>{isOscillator ? "State" : "Zone"}</span>
               <Badge tone={toneFromZone(stateToneSource)}>{stateValue}</Badge>
             </div>
             <div className="chart-summary-item">
@@ -304,8 +315,14 @@ export function DashboardPage() {
               <Badge tone={toneFromZone(latestSignal)}>{latestSignal}</Badge>
             </div>
             <div className="chart-summary-item">
-              <span>{isRsi ? "RSI" : "Indicator"}</span>
-              <b>{isRsi ? formatNumber(latestRsi) : indicatorKey}</b>
+              <span>{isOscillator ? oscillatorLabel : "Indicator"}</span>
+              <b>
+                {isAdaptiveRsi
+                  ? `${formatNumber(latestOscillator)} / ${formatNumber(latestTrigger)}`
+                  : isOscillator
+                    ? formatNumber(latestOscillator)
+                    : indicatorKey}
+              </b>
             </div>
             <div className="chart-summary-item">
               <span>Close</span>
@@ -339,7 +356,9 @@ export function DashboardPage() {
                   alert.triggered,
                   latestCloseTime,
                   latest?.price,
-                  isRsi ? latestRsi : undefined,
+                  isOscillator
+                    ? { label: oscillatorLabel, value: latestOscillator }
+                    : null,
                 )}
                 zone={getAlertZone(alert.name, alert.triggered, latestSignal)}
               />

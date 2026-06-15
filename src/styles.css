@@ -223,7 +223,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(108, 168, 255, .3
 select option { color: #0d1220; }
 label { display: flex; flex-direction: column; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 850; }
 .inline-form { display: grid; grid-template-columns: minmax(0, 1fr) 130px auto; gap: 10px; align-items: center; }
-.inline-form.compact { grid-template-columns: 155px 92px auto; }
+.inline-form.compact { grid-template-columns: 155px 92px minmax(150px, 1fr) 140px; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
 
 .alert { margin: 12px 0; padding: 12px 14px; border-radius: 15px; font-size: 13px; line-height: 1.5; }
@@ -599,4 +599,18 @@ tr:hover td { background: rgba(255, 255, 255, .035); }
   fill: rgba(238, 244, 255, .68);
   font-size: 11px;
   font-weight: 850;
+}
+.line-trigger {
+  fill: none;
+  stroke: var(--yellow);
+  stroke-width: 2.2;
+  stroke-dasharray: 6 6;
+  filter: drop-shadow(0 0 6px rgba(255, 209, 102, .24));
+}
+.line-half-trend {
+  fill: none;
+  stroke: rgba(238, 244, 255, .72);
+  stroke-width: 2;
+  stroke-dasharray: 5 7;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, .16));
 }

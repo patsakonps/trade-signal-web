@@ -22,25 +22,38 @@ function candleClass(color?: string) {
   return "candle green";
 }
 
+function isOscillatorIndicator(indicatorKey?: string) {
+  return indicatorKey === "RSI_14" || indicatorKey === "ADAPTIVE_RSI_TRIGGER";
+}
+
+function getOscillatorValue(point: IndicatorResult["series"][number], indicatorKey?: string): number | null {
+  if (indicatorKey === "ADAPTIVE_RSI_TRIGGER") return toFiniteNumber(point.values.AdaptiveRSI);
+  if (indicatorKey === "RSI_14") return toFiniteNumber(point.values.RSI);
+  return null;
+}
+
 export function MiniChart({ result }: MiniChartProps) {
   const series = result?.series?.slice(-80) ?? [];
   const width = 720;
   const height = 260;
   const padding = 24;
-  const isRsi = result?.indicatorKey === "RSI_14";
+  const indicatorKey = result?.indicatorKey;
+  const isOscillator = isOscillatorIndicator(indicatorKey);
+  const isAdaptiveRsi = indicatorKey === "ADAPTIVE_RSI_TRIGGER";
 
   if (!series.length) {
     return <div className="chart-empty">ยังไม่มีข้อมูลกราฟ</div>;
   }
 
-  const rsiValues = series.map((point) => toFiniteNumber(point.values.RSI));
-  const overbought = toFiniteNumber(result?.latest?.values.Overbought) ?? 70;
-  const oversold = toFiniteNumber(result?.latest?.values.Oversold) ?? 30;
+  const oscillatorValues = series.map((point) => getOscillatorValue(point, indicatorKey));
+  const triggerValues = series.map((point) => toFiniteNumber(point.values.Trigger));
+  const overbought = toFiniteNumber(result?.latest?.values.Overbought) ?? (isAdaptiveRsi ? 80 : 70);
+  const oversold = toFiniteNumber(result?.latest?.values.Oversold) ?? (isAdaptiveRsi ? 20 : 30);
 
-  const chartValues = isRsi
-    ? [0, 100, overbought, oversold, ...rsiValues.filter((value): value is number => value !== null)]
+  const chartValues = isOscillator
+    ? [0, 100, overbought, oversold, ...oscillatorValues.filter((value): value is number => value !== null), ...triggerValues.filter((value): value is number => value !== null)]
     : series.flatMap((point) =>
-        [point.price, point.values.Fast, point.values.Slow]
+        [point.price, point.values.Fast, point.values.Slow, point.values.HalfTrend, point.values.ATRHigh, point.values.ATRLow]
           .map(toFiniteNumber)
           .filter((value): value is number => value !== null)
       );
@@ -54,7 +67,7 @@ export function MiniChart({ result }: MiniChartProps) {
   const rawRange = rawMax - rawMin;
   const fallbackRange = Math.max(Math.abs(rawMax), Math.abs(rawMin), 1) * 0.002;
   const domainRange = rawRange > 0 ? rawRange : fallbackRange;
-  const domainPadding = isRsi ? 0 : domainRange * 0.12;
+  const domainPadding = isOscillator ? 0 : domainRange * 0.12;
   const min = rawMin - domainPadding;
   const max = rawMax + domainPadding;
   const range = max - min;
@@ -72,15 +85,25 @@ export function MiniChart({ result }: MiniChartProps) {
     return value === null ? [] : [{ x: xFor(index), y: yFor(value) }];
   });
 
-  const rsiPoints = series.flatMap((point, index) => {
-    const value = toFiniteNumber(point.values.RSI);
+  const halfTrendPoints = series.flatMap((point, index) => {
+    const value = toFiniteNumber(point.values.HalfTrend);
+    return value === null ? [] : [{ x: xFor(index), y: yFor(value) }];
+  });
+
+  const oscillatorPoints = series.flatMap((point, index) => {
+    const value = getOscillatorValue(point, indicatorKey);
+    return value === null ? [] : [{ x: xFor(index), y: yFor(value) }];
+  });
+
+  const triggerPoints = series.flatMap((point, index) => {
+    const value = toFiniteNumber(point.values.Trigger);
     return value === null ? [] : [{ x: xFor(index), y: yFor(value) }];
   });
 
   const markerYFor = (point: (typeof series)[number]) => {
-    if (isRsi) {
-      const rsi = toFiniteNumber(point.values.RSI);
-      return rsi === null ? null : yFor(rsi);
+    if (isOscillator) {
+      const oscillator = getOscillatorValue(point, indicatorKey);
+      return oscillator === null ? null : yFor(oscillator);
     }
 
     const price = toFiniteNumber(point.price);
@@ -100,13 +123,14 @@ export function MiniChart({ result }: MiniChartProps) {
           <line key={row} x1="0" x2={width} y1={padding + row * 48} y2={padding + row * 48} className="grid-line" />
         ))}
 
-        {isRsi ? (
+        {isOscillator ? (
           <>
             <line x1={padding} x2={width - padding} y1={yFor(overbought)} y2={yFor(overbought)} className="threshold-line overbought" />
             <line x1={padding} x2={width - padding} y1={yFor(oversold)} y2={yFor(oversold)} className="threshold-line oversold" />
             <text x={padding + 4} y={yFor(overbought) - 7} className="threshold-label">OB {overbought}</text>
             <text x={padding + 4} y={yFor(oversold) + 15} className="threshold-label">OS {oversold}</text>
-            {rsiPoints.length ? <path d={pathFrom(rsiPoints)} className="line-rsi" /> : null}
+            {oscillatorPoints.length ? <path d={pathFrom(oscillatorPoints)} className="line-rsi" /> : null}
+            {triggerPoints.length ? <path d={pathFrom(triggerPoints)} className="line-trigger" /> : null}
           </>
         ) : (
           <>
@@ -120,6 +144,7 @@ export function MiniChart({ result }: MiniChartProps) {
             })}
             {fastPoints.length ? <path d={pathFrom(fastPoints)} className="line-fast" /> : null}
             {slowPoints.length ? <path d={pathFrom(slowPoints)} className="line-slow" /> : null}
+            {halfTrendPoints.length ? <path d={pathFrom(halfTrendPoints)} className="line-half-trend" /> : null}
           </>
         )}
 
