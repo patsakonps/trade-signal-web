@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { api, getErrorMessage } from "../lib/api";
-import type { IndicatorResult, SignalHistoryItem } from "../lib/types";
+import type { IndicatorResult, IndicatorTemplate, SignalHistoryItem } from "../lib/types";
 import { StatCard } from "../components/StatCard";
 import { Badge, toneFromZone } from "../components/Badge";
 import { MiniChart } from "../components/MiniChart";
 import { SignalCard } from "../components/SignalCard";
 import { formatThaiDateTime, formatThaiTime, formatTimeAgoThai, isDataStale } from "../lib/time";
 import { getTradingViewChartUrl } from "../lib/marketLinks";
+import { chartTimeframes } from "../lib/timeframes";
 
 function formatPrice(value?: number) {
   if (value === undefined || value === null || Number.isNaN(value)) return "-";
@@ -27,6 +28,8 @@ function shortSignalDescription(triggered: boolean, closeTime?: number, price?: 
 export function DashboardPage() {
   const [symbol, setSymbol] = useState("BTCUSDT");
   const [timeframe, setTimeframe] = useState("4h");
+  const [indicatorKey, setIndicatorKey] = useState("CDC_ACTION_ZONE");
+  const [templates, setTemplates] = useState<IndicatorTemplate[]>([]);
   const [result, setResult] = useState<IndicatorResult | null>(null);
   const [signals, setSignals] = useState<SignalHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,11 +37,11 @@ export function DashboardPage() {
   const [error, setError] = useState("");
   const [historyError, setHistoryError] = useState("");
 
-  async function loadCdc() {
+  async function loadIndicator() {
     setLoading(true);
     setError("");
     try {
-      const response = await api.get<IndicatorResult>("/api/indicators/cdc-action-zone", {
+      const response = await api.get<IndicatorResult>(`/api/indicators/built-in/${indicatorKey}`, {
         params: { symbol, timeframe, limit: 240 }
       });
       setResult(response.data);
@@ -65,9 +68,22 @@ export function DashboardPage() {
   }
 
   useEffect(() => {
-    loadCdc();
+    loadIndicator();
     loadSignalHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    async function loadTemplates() {
+      try {
+        const response = await api.get<{ templates: IndicatorTemplate[] }>("/api/indicators/templates");
+        setTemplates(response.data.templates.filter((item) => item.isBuiltIn || item.type === "BUILT_IN"));
+      } catch {
+        // Dashboard can still run with the selected default indicator.
+      }
+    }
+
+    loadTemplates();
   }, []);
 
   const latest = result?.latest;
@@ -81,7 +97,7 @@ export function DashboardPage() {
     <div className="page-stack">
       <section className="stats-grid">
         <StatCard label="Price" value={formatPrice(latest?.price)} sub={`${symbol} · ${timeframe}`} tone="blue" />
-        <StatCard label="Zone" value={latestZone} sub={latestCloseTime ? `ปิด ${formatThaiTime(latestCloseTime)}` : "CDC zone"} tone={latestZone === "RED" ? "negative" : latestZone === "YELLOW" ? "warning" : "positive"} />
+        <StatCard label="Zone" value={latestZone} sub={latestCloseTime ? `ปิด ${formatThaiTime(latestCloseTime)}` : "indicator zone"} tone={latestZone === "RED" ? "negative" : latestZone === "YELLOW" ? "warning" : "positive"} />
         <StatCard label="Signal" value={latestSignal} sub={latestCloseTime ? `จากแท่ง ${formatThaiTime(latestCloseTime)}` : "after close"} tone={latestSignal === "SELL" ? "negative" : latestSignal === "BUY" ? "positive" : "blue"} />
         <StatCard label="Alerts" value={String(triggeredAlerts)} sub={latestCloseTime ? formatTimeAgoThai(latestCloseTime) : "waiting"} tone="warning" />
       </section>
@@ -94,19 +110,20 @@ export function DashboardPage() {
         <div className="card panel chart-panel">
           <div className="panel-head responsive-head">
             <div>
-              <h3>{symbol} · CDC Action Zone</h3>
-              <p className="muted">EMA 12/26 · ใช้แท่งที่ปิดแล้วเท่านั้น</p>
+              <h3>{symbol} · {templates.find((item) => item.key === indicatorKey)?.name ?? indicatorKey}</h3>
+              <p className="muted">Server-side built-in · ใช้แท่งที่ปิดแล้วเท่านั้น</p>
             </div>
             <div className="inline-form compact">
               <input value={symbol} onChange={(event) => setSymbol(event.target.value.toUpperCase())} />
               <select value={timeframe} onChange={(event) => setTimeframe(event.target.value)}>
-                <option>5m</option>
-                <option>15m</option>
-                <option>1h</option>
-                <option>4h</option>
-                <option>1d</option>
+                {chartTimeframes.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
-              <button className="btn primary" onClick={loadCdc} disabled={loading}>{loading ? "Loading" : "Run"}</button>
+              <select value={indicatorKey} onChange={(event) => setIndicatorKey(event.target.value)}>
+                {(templates.length ? templates : [{ key: "CDC_ACTION_ZONE", name: "CDC Action Zone V.2" } as IndicatorTemplate]).map((item) => (
+                  <option key={item.key} value={item.key}>{item.name}</option>
+                ))}
+              </select>
+              <button className="btn primary" onClick={loadIndicator} disabled={loading}>{loading ? "Loading" : "Run"}</button>
             </div>
           </div>
           {error ? <div className="alert error">{error}</div> : null}
@@ -121,8 +138,8 @@ export function DashboardPage() {
               <Badge tone={toneFromZone(latestSignal)}>{latestSignal}</Badge>
             </div>
             <div className="chart-summary-item">
-              <span>EMA</span>
-              <b>12 / 26</b>
+              <span>Indicator</span>
+              <b>{indicatorKey}</b>
             </div>
             <div className="chart-summary-item">
               <span>Close</span>
@@ -149,7 +166,7 @@ export function DashboardPage() {
                 zone={alert.triggered ? latestSignal : latestZone}
               />
             ))}
-            {!result ? <p className="muted">กด Run เพื่อดึง CDC signal</p> : null}
+            {!result ? <p className="muted">กด Run เพื่อดึง signal</p> : null}
           </div>
         </div>
       </section>

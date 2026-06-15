@@ -10,7 +10,7 @@ export function Badge({ children, tone = "neutral" }: BadgeProps) {
 export function toneFromZone(zone?: string): "green" | "red" | "yellow" | "blue" | "neutral" {
   if (zone === "GREEN" || zone === "BUY") return "green";
   if (zone === "RED" || zone === "SELL") return "red";
-  if (zone === "YELLOW") return "yellow";
-  if (zone === "BLUE") return "blue";
+  if (zone === "YELLOW" || zone === "OVERBOUGHT") return "yellow";
+  if (zone === "BLUE" || zone === "OVERSOLD") return "blue";
   return "neutral";
 }

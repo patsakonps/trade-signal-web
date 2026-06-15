@@ -4,6 +4,7 @@ import { api, getErrorMessage } from "../lib/api";
 import type { IndicatorTemplate, ScannerRuleResult, ScannerSummary, SignalRule, TelegramNotificationResponse, TelegramNotificationSetting } from "../lib/types";
 import { Badge } from "../components/Badge";
 import { formatThaiDateTime, formatThaiTime } from "../lib/time";
+import { chartTimeframes } from "../lib/timeframes";
 
 function getScanStatusTone(status: ScannerRuleResult["status"]): "green" | "red" | "yellow" | "blue" | "neutral" {
   if (status === "TRIGGERED") return "green";
@@ -273,9 +274,9 @@ export function SignalRulesPage() {
           <div className="form-grid single-on-mobile">
             <label>Rule Name<input value={name} onChange={(event) => setName(event.target.value)} /></label>
             <label>Symbol<input value={symbol} onChange={(event) => setSymbol(event.target.value.toUpperCase())} /></label>
-            <label>Timeframe<select value={timeframe} onChange={(event) => setTimeframe(event.target.value)}><option>5m</option><option>15m</option><option>1h</option><option>4h</option><option>1d</option></select></label>
+            <label>Timeframe<select value={timeframe} onChange={(event) => setTimeframe(event.target.value)}>{chartTimeframes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
             <label>Indicator<select value={indicatorKey} onChange={(event) => setIndicatorKey(event.target.value)}>{templates.map((item) => <option key={item.key} value={item.key}>{item.name}</option>)}</select></label>
-            <label>Condition<select value={condition} onChange={(event) => setCondition(event.target.value)}><option>BUY_OR_SELL</option><option>BUY</option><option>SELL</option><option>GREEN</option><option>RED</option><option>YELLOW</option><option>BLUE</option><option>ZONE_CHANGED</option></select></label>
+            <label>Condition<select value={condition} onChange={(event) => setCondition(event.target.value)}><option>BUY_OR_SELL</option><option>BUY</option><option>SELL</option><option>GREEN</option><option>RED</option><option>YELLOW</option><option>BLUE</option><option>ZONE_CHANGED</option><option>OVERSOLD</option><option>OVERBOUGHT</option></select></label>
           </div>
           <button className="btn primary full-on-mobile" onClick={createRule} disabled={savingRule}><Plus size={16} /> {savingRule ? "Saving" : "Save Rule"}</button>
         </div>

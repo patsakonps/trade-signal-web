@@ -5,6 +5,7 @@ import type { Candle, IndicatorResult, IndicatorTemplate } from "../lib/types";
 import { defaultCustomCdcScript } from "../lib/defaultCustomCdcScript";
 import { runCustomIndicatorScript } from "../lib/scriptRunner";
 import { Badge, toneFromZone } from "../components/Badge";
+import { chartTimeframes } from "../lib/timeframes";
 
 export function IndicatorsPage() {
   const [templates, setTemplates] = useState<IndicatorTemplate[]>([]);
@@ -108,9 +109,11 @@ export function IndicatorsPage() {
               <div>
                 <h3>{indicator.name}</h3>
                 <p>{indicator.description}</p>
-                <div className="badge-row"><Badge tone="green">BUILT-IN</Badge><Badge tone="blue">CDC</Badge></div>
+                <div className="badge-row"><Badge tone="green">BUILT-IN</Badge><Badge tone="blue">{indicator.key}</Badge></div>
               </div>
-              <button className="btn" onClick={duplicateCdc}><Copy size={16} /> Duplicate as Custom</button>
+              {indicator.key === "CDC_ACTION_ZONE" ? (
+                <button className="btn" onClick={duplicateCdc}><Copy size={16} /> Duplicate as Custom</button>
+              ) : null}
             </div>
           ))}
         </div>
@@ -145,7 +148,7 @@ export function IndicatorsPage() {
           <div className="inline-form compact">
             <input value={symbol} onChange={(event) => setSymbol(event.target.value.toUpperCase())} />
             <select value={timeframe} onChange={(event) => setTimeframe(event.target.value)}>
-              <option>5m</option><option>15m</option><option>1h</option><option>4h</option><option>1d</option>
+              {chartTimeframes.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </div>
         </div>

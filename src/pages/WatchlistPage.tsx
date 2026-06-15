@@ -5,6 +5,7 @@ import type { IndicatorResult, SignalRule, WatchlistItem } from "../lib/types";
 import { Badge, toneFromZone } from "../components/Badge";
 import { formatThaiTime, formatTimeAgoThai, isDataStale } from "../lib/time";
 import { getTradingViewChartUrl } from "../lib/marketLinks";
+import { chartTimeframes } from "../lib/timeframes";
 
 function formatPrice(value?: number) {
   if (value === undefined || value === null || Number.isNaN(value)) return "...";
@@ -132,11 +133,7 @@ export function WatchlistPage() {
         <div className="inline-form">
           <input placeholder="BTCUSDT" value={symbol} onChange={(event) => setSymbol(event.target.value.toUpperCase())} />
           <select value={timeframe} onChange={(event) => setTimeframe(event.target.value)}>
-            <option>5m</option>
-            <option>15m</option>
-            <option>1h</option>
-            <option>4h</option>
-            <option>1d</option>
+            {chartTimeframes.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
           <button className="btn primary" onClick={addItem}><Plus size={16} /> Add</button>
         </div>
