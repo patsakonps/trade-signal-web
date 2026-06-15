@@ -202,6 +202,7 @@ button { -webkit-tap-highlight-color: transparent; }
   font-weight: 950;
   line-height: 1.05;
   white-space: nowrap;
+  min-width: 0;
 }
 .badge.green { color: var(--green); background: rgba(46, 229, 157, .12); border-color: rgba(46, 229, 157, .24); }
 .badge.red { color: var(--red); background: rgba(255, 85, 115, .12); border-color: rgba(255, 85, 115, .24); }
@@ -254,7 +255,7 @@ label { display: flex; flex-direction: column; gap: 8px; color: var(--muted); fo
 
 .chart-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  grid-template-columns: minmax(128px, 1.08fr) repeat(3, minmax(0, .95fr)) auto;
   gap: 9px;
   margin-top: 12px;
   align-items: stretch;
@@ -272,7 +273,14 @@ label { display: flex; flex-direction: column; gap: 8px; color: var(--muted); fo
 }
 .chart-summary-item > span, .meta-pill span { color: var(--muted); font-size: 11px; line-height: 1.2; font-weight: 850; }
 .chart-summary-item > b, .meta-pill b { color: var(--text); font-size: 12px; line-height: 1.25; overflow-wrap: anywhere; }
-.chart-summary-item .badge { justify-self: start; }
+.chart-summary-item .badge {
+  justify-self: start;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.15;
+}
 .chart-link-btn { align-self: stretch; }
 
 .signal-list { display: grid; gap: 10px; }

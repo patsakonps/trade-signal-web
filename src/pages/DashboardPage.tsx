@@ -77,7 +77,13 @@ function getOscillatorToneSource(state: unknown, zone?: string) {
 function getFlowStateLabel(primary: unknown, fallback?: unknown) {
   const first = primary === undefined || primary === null || primary === "NONE" ? fallback : primary;
   if (first === undefined || first === null || first === "") return "WAITING";
-  return String(first).replace(/_/g, " ");
+
+  const label = String(first).replace(/_/g, " ");
+
+  if (label === "BULLISH DIVERGENCE") return "BULLISH DIV";
+  if (label === "BEARISH DIVERGENCE") return "BEARISH DIV";
+
+  return label;
 }
 
 function getFlowToneSource(indicatorKey: string, latest: IndicatorResult["latest"] | undefined, latestZone?: string) {
