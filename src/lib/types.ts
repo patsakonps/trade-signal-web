@@ -134,3 +134,55 @@ export type SignalHistoryItem = {
     enabled: boolean;
   } | null;
 };
+
+export type BacktestTrade = {
+  id: string;
+  side: "LONG" | "SHORT";
+  entryTime: string;
+  entryPrice: number;
+  exitTime: string;
+  exitPrice: number;
+  quantity: number;
+  entryFee: number;
+  exitFee: number;
+  pnl: number;
+  pnlPct: number;
+  reason: string;
+};
+
+export type BacktestRun = {
+  id: string;
+  workspaceId: string;
+  ruleId: string;
+  exchange: string;
+  symbol: string;
+  timeframe: string;
+  initialCapital: number;
+  finalCapital: number;
+  netProfitPct: number;
+  winrate: number;
+  maxDrawdownPct: number;
+  profitFactor: number;
+  totalTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  avgWinPct: number;
+  avgLossPct: number;
+  expectancyPct: number;
+  score: number;
+  configJson?: {
+    candlesLimit?: number;
+    candleCount?: number;
+    positionSizePct?: number;
+    feePct?: number;
+    slippagePct?: number;
+    stopLossPct?: number | null;
+    takeProfitPct?: number | null;
+    tradeMode?: "LONG_ONLY" | "LONG_SHORT";
+    signalsCount?: number;
+    equityCurve?: Array<{ time: string; equity: number }>;
+  };
+  createdAt: string;
+  rule?: Pick<SignalRule, "id" | "name" | "symbol" | "timeframe" | "indicatorKey" | "condition" | "enabled"> | null;
+  trades?: BacktestTrade[];
+};

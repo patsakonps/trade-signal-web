@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { BellRing, BriefcaseBusiness, Code2, Eye, FileDown, Gauge, LogOut, Menu, RefreshCw } from "lucide-react";
+import { BellRing, BriefcaseBusiness, Code2, Eye, FileDown, FlaskConical, Gauge, LogOut, Menu, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { clearWorkspaceId } from "../lib/workspace";
 
@@ -7,8 +7,9 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: Gauge },
   { to: "/watchlist", label: "Watchlist", icon: Eye },
   { to: "/rules", label: "Rules", icon: BellRing },
-  { to: "/indicators", label: "Indicators", icon: Code2 },
+  { to: "/strategy-lab", label: "Strategy", icon: FlaskConical },
   { to: "/portfolio", label: "Portfolio", icon: BriefcaseBusiness },
+  { to: "/indicators", label: "Indicators", icon: Code2 },
   { to: "/import", label: "Import", icon: FileDown }
 ];
 
@@ -16,8 +17,9 @@ const pageInfo: Record<string, { title: string; desc: string }> = {
   "/dashboard": { title: "Dashboard", desc: "ภาพรวมสัญญาณและประวัติที่ scanner บันทึก" },
   "/watchlist": { title: "Watchlist", desc: "ติดตามเหรียญและสร้าง rule ได้เร็วขึ้น" },
   "/rules": { title: "Signal Rules", desc: "จัดการ Telegram และเงื่อนไขแจ้งเตือน" },
-  "/indicators": { title: "Indicators", desc: "Built-in CDC และ custom script editor" },
+  "/strategy-lab": { title: "Strategy Lab", desc: "Backtest, compare rules, และจัดอันดับกลยุทธ์" },
   "/portfolio": { title: "Portfolio", desc: "สรุปพอร์ตสำหรับ phase import" },
+  "/indicators": { title: "Indicators", desc: "Built-in CDC และ custom script editor" },
   "/import": { title: "Import", desc: "นำเข้าไฟล์ประวัติการเทรด" }
 };
 

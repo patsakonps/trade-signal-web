@@ -6,6 +6,7 @@ import { WatchlistPage } from "./pages/WatchlistPage";
 import { SignalRulesPage } from "./pages/SignalRulesPage";
 import { IndicatorsPage } from "./pages/IndicatorsPage";
 import { PortfolioPage } from "./pages/PortfolioPage";
+import { StrategyLabPage } from "./pages/StrategyLabPage";
 import { ImportPage } from "./pages/ImportPage";
 import { WorkspaceLoginPage } from "./pages/WorkspaceLoginPage";
 import { getStoredWorkspaceId } from "./lib/workspace";
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/rules" element={<SignalRulesPage />} />
         <Route path="/indicators" element={<IndicatorsPage />} />
         <Route path="/portfolio" element={<PortfolioPage />} />
+        <Route path="/strategy-lab" element={<StrategyLabPage />} />
         <Route path="/import" element={<ImportPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
