@@ -49,6 +49,17 @@ function metricTone(value: number): "green" | "red" | "neutral" {
   return "neutral";
 }
 
+function getLatestRunsByRule(items: BacktestRun[]) {
+  const latestByRule = new Map<string, BacktestRun>();
+  for (const item of items) {
+    const current = latestByRule.get(item.ruleId);
+    if (!current || new Date(item.createdAt).getTime() > new Date(current.createdAt).getTime()) {
+      latestByRule.set(item.ruleId, item);
+    }
+  }
+  return Array.from(latestByRule.values());
+}
+
 function toPayload(config: StrategyConfig) {
   return {
     ...config,
@@ -130,7 +141,10 @@ export function StrategyLabPage() {
   const [config, setConfig] = useState<StrategyConfig>(defaultConfig);
 
   const builtInRules = useMemo(() => rules.filter((rule) => rule.indicatorType === "BUILT_IN"), [rules]);
-  const rankedRuns = useMemo(() => [...runs].sort((left, right) => right.score - left.score || right.netProfitPct - left.netProfitPct), [runs]);
+  const rankedRuns = useMemo(
+    () => getLatestRunsByRule(runs).sort((left, right) => right.score - left.score || right.netProfitPct - left.netProfitPct),
+    [runs]
+  );
 
   async function load() {
     setErrors([]);
@@ -162,7 +176,7 @@ export function StrategyLabPage() {
     try {
       const response = await api.post<{ run: BacktestRun }>("/api/strategy-lab/backtest", toPayload(config));
       setLatestRun(response.data.run);
-      setRuns((current) => [response.data.run, ...current.filter((item) => item.id !== response.data.run.id)]);
+      setRuns((current) => [response.data.run, ...current.filter((item) => item.ruleId !== response.data.run.ruleId)]);
       setMessage("Backtest สำเร็จ บันทึกผลเข้า Strategy Lab แล้ว");
     } catch (err) {
       setErrors([getErrorMessage(err)]);
@@ -177,10 +191,7 @@ export function StrategyLabPage() {
     setErrors([]);
     try {
       const response = await api.post<CompareResponse>("/api/strategy-lab/compare", toPayload(config));
-      setRuns((current) => {
-        const incomingIds = new Set(response.data.runs.map((item) => item.id));
-        return [...response.data.runs, ...current.filter((item) => !incomingIds.has(item.id))];
-      });
+      setRuns(response.data.runs);
       setLatestRun(response.data.runs[0] ?? null);
       setMessage(`Compare สำเร็จ ${response.data.runs.length} rules${response.data.errors.length ? `, มี error ${response.data.errors.length} rules` : ""}`);
       setErrors(response.data.errors.map((item) => `${item.ruleName}: ${item.message}`));
